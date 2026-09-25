@@ -234,6 +234,20 @@ class Semester {
 
   List<Period>? _periodsCache;
 
+  /// 第几节 => 那节课的起止偏移量（下标就是节次，`[0]` 空着不用）。
+  ///
+  /// ===== MOD: 给自定义日程用（2026-09-25）=====
+  ///
+  /// 自定义日程可以按**节次**填（例：第 5-6 节），也可以按**具体时刻**填。
+  /// 按节次那种要落到钟点上才能进日历与课表，而节次到钟点的换算表
+  /// （[_sessionToTime]）原本是私有的。这里开一个**只读**访问器，
+  /// 让 `lib/mod/user_event_periods.dart` 用与课程**完全同一套**口径换算，
+  /// 避免自己另写一份、两边对不上。
+  ///
+  /// 刻意返回 `List.unmodifiable` 的浅拷贝视图之外的**同一份内层列表**：
+  /// 换算只需要读，不需要复制几百个 Duration。调用方**不得修改**返回的内容。
+  List<List<Duration>> get periodTimes => _sessionToTime;
+
   void _invalidatePeriodsCache() => _periodsCache = null;
 
   // 构建代价高，缓存结果；任何影响构建输入的 mutator 都必须调用 _invalidatePeriodsCache。
