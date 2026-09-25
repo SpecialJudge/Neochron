@@ -197,7 +197,7 @@ class HomeModHooks {
       DesktopNotify.ding(
         title: task.summary.trim().isEmpty ? '待办提醒' : task.summary.trim(),
         body: task.description.trim().isEmpty
-            ? 'Elychron 提醒你处理这条待办'
+            ? 'Neochron 提醒你处理这条待办'
             : task.description.trim(),
       );
       return;
@@ -280,7 +280,7 @@ class HomeModHooks {
 
   /// ===== MOD: 专注期间不打断 =====
   ///
-  /// 用户反馈：如果在专注期间通过外部分享进入 Elychron，会强行打断并提示未正常退出。
+  /// 用户反馈：如果在专注期间通过外部分享进入 Neochron，会强行打断并提示未正常退出。
   /// 原因：分享流程会切到待办页并弹出新建面板， 直接压在专注页上，把这次专注打断，
   /// 而专注会话是"未完成"状态，于是再进专注页就会提示"上次没有正常结束"。
   ///
@@ -362,7 +362,7 @@ class HomeModHooks {
                     ? '没有收到可用的文字或文件。'
                     : '对方应用没有把${unreadable.length} 个文件的读取权限给过来'
                         '（${unreadable.first}）。\n'
-                        '可以先把它保存到相册/文件里，再从 Elychron 里添加。',
+                        '可以先把它保存到相册/文件里，再从 Neochron 里添加。',
                 style: const TextStyle(fontSize: 14),
               ),
             ),
@@ -390,7 +390,7 @@ class HomeModHooks {
       // 是很常见的诉求（比如往写报告里丢一份参考资料），所以加一个去向选择。
       final target = await showDingTalkSheet<_ShareTarget>(
         context: context,
-        title: '分享到 Elychron',
+        title: '分享到 Neochron',
         subtitle: unreadable.isEmpty
             ? _shareSummary(title, attachments.length)
             : '${_shareSummary(title, attachments.length)}（有 '

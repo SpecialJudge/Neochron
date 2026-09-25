@@ -59,8 +59,8 @@ import java.util.Locale
 
 private const val TODO_WIDGET_PREFS = "todo_widget"
 
-/// 小组件自己的日志标签：`adb logcat -s ElychronWidget` 就能只看这几行。
-private const val TAG = "ElychronWidget"
+/// 小组件自己的日志标签：`adb logcat -s NeochronWidget` 就能只看这几行。
+private const val TAG = "NeochronWidget"
 private const val TODO_WIDGET_SNAPSHOT = "snapshot"
 private const val TODO_WIDGET_PENDING_COMPLETIONS = "pending_completions"
 private val todoTaskIdKey = ActionParameters.Key<String>("todoTaskId")
@@ -321,7 +321,7 @@ class CompleteTodoAction : ActionCallback {
         // 用户反馈：点小组件上的方框"没反应"（但进 App 后待办确实完成了）。
         // 光看系统日志只能确认动作被派发了（InvisibleActionTrampolineActivity 起来过），
         // 分不清是"回调没跑"还是"跑了但画面没重画"。这两行 + queueTodoWidgetCompletion
-        // 里的日志，用 `adb logcat -s ElychronWidget` 就能一刀切开。
+        // 里的日志，用 `adb logcat -s NeochronWidget` 就能一刀切开。
         Log.i(TAG, "onAction 收到勾选: id=$glanceId task=${parameters[todoTaskIdKey]}")
         val taskId = parameters[todoTaskIdKey]
         if (taskId == null) {

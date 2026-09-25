@@ -242,7 +242,7 @@ class LanSyncServer {
     final incoming = DataBundle.decode(body);
     if (incoming == null) {
       return _json(request.response, HttpStatus.badRequest,
-          {'ok': false, 'error': '数据格式不对，不是 Elychron 的备份'});
+          {'ok': false, 'error': '数据格式不对，不是 Neochron 的备份'});
     }
 
     final result = await mergeIncomingBundle(

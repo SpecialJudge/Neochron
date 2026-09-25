@@ -75,7 +75,7 @@ class DesktopNavRail extends StatelessWidget {
                   // 或者用户把窗口调窄，这行就会溢出（测试实测溢出过 1.2px）
                   const Expanded(
                     child: Text(
-                      'Elychron',
+                      'Neochron',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style:

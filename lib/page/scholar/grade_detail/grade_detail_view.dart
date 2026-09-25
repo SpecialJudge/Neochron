@@ -423,7 +423,7 @@ class GradeDetailPage extends StatelessWidget {
     //   而这里在 `Obx` 的 builder 里 → GetX 的 `RxInterface.proxy` 被永久留在这个
     //   构建失败的 Obx 上（get 4.7.3 `notifyChildren` 抛错时不恢复代理）
     //   → 全 App 的 Rx 读取都挂到这个死观察者上、反复触发它重建、每次都再抛一次
-    //   → **主线程 100% CPU 空转**，5 秒后系统弹Elychron 无响应（ANR）。
+    //   → **主线程 100% CPU 空转**，5 秒后系统弹Neochron 无响应（ANR）。
     //   真机 ANR 报告佐证：主线程 state=R、utm=23.5s，一直在 libapp.so（Dart AOT）里跑。
     //
     // 所以先挡住"没有成绩"这个**正常状态**：显示一句人话，一个下标都不碰。

@@ -12,20 +12,20 @@ import 'package:celechron/tutorial/tutorial_model.dart';
 const Tutorial tutorialSetup = Tutorial(
   id: 'setup',
   title: '配置相关',
-  summary: '想要把Elychron变得更加顺手，使用前请注意更改几个设置',
+  summary: '想要把Neochron变得更加顺手，使用前请注意更改几个设置',
   group: TutorialGroup.basics,
   steps: [
     TutorialTextStep(
       title: '配置环境',
       body: [
-        '想要把Elychron变得更加顺手，使用前请注意更改几个设置。',
-        '当然这些设置不是必须的，但是Elychron强烈建议跟着操作一遍！',
+        '想要把Neochron变得更加顺手，使用前请注意更改几个设置。',
+        '当然这些设置不是必须的，但是Neochron强烈建议跟着操作一遍！',
       ],
     ),
     TutorialImageStep(
       title: 'DeepSeek密钥配置',
       body: [
-        '这是使用Elychron核心功能的必要条件。据传Tixer最喜欢的就是这个功能。',
+        '这是使用Neochron核心功能的必要条件。据传Tixer最喜欢的就是这个功能。',
         '蓝色大肥鱼的API key配置方法并不复杂，懂的可以跳过。',
         '第一步，访问DeepSeek官方网站，点击API开放平台。',
       ],
@@ -40,7 +40,7 @@ const Tutorial tutorialSetup = Tutorial(
     TutorialImageStep(
       body: <String>[
         '在弹窗内输入API key的名字（随意就好），点击创建。',
-        '请仔细保存好这个key！复制后直接粘贴到Elychron的设置-AI智能助手页面的API key里面。',
+        '请仔细保存好这个key！复制后直接粘贴到Neochron的设置-AI智能助手页面的API key里面。',
         '注意，直接复制粘贴可能会不成功，建议先在便签之类的地方中转一次再粘贴。',
         '最后不要忘了给DeepSeek打钱',
       ],
@@ -49,7 +49,7 @@ const Tutorial tutorialSetup = Tutorial(
     TutorialImageStep(
       title: '闹钟相关设置',
       body: <String>[
-        '由于Elychron不是系统应用，很多闹钟功能无法复现。',
+        '由于Neochron不是系统应用，很多闹钟功能无法复现。',
         '但是为了尽可能保持稳定性，可以进入设置-闹钟可靠性选项，按说明操作。',
       ],
       assets: <String>['assets/tutorial/setup/alarm-reliability.png'],
@@ -74,8 +74,8 @@ const Tutorial tutorialSetup = Tutorial(
     TutorialTextStep(
       title: '继续看教程吧',
       body: [
-        '除了基础配置，Elychron强烈建议看的教程还有“基本操作”。',
-        '其他教程看个人需求就可以啦，欢迎来到Elychron！',
+        '除了基础配置，Neochron强烈建议看的教程还有“基本操作”。',
+        '其他教程看个人需求就可以啦，欢迎来到Neochron！',
       ],
     ),
   ],

@@ -575,7 +575,7 @@ class _Footnotes extends StatelessWidget {
     const items = <String>[
       '同一 Wi-Fi 才能连上，跨网络连不上（局域网直连的固有限制）',
       '数据只在这两台设备之间直接传输，不经过任何服务器，也不需要账号',
-      '两台设备都要装 Elychron；谁发起、谁连接都行',
+      '两台设备都要装 Neochron；谁发起、谁连接都行',
       '只在 App 打开时可用，切后台太久可能被系统暂停',
     ];
     return Padding(

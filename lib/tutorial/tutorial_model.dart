@@ -179,7 +179,7 @@ class TutorialImageStep extends TutorialStep {
   });
 }
 
-/// 两栏对比：适合"以前 / 现在""官方版 / Elychron"这类说明
+/// 两栏对比：适合"以前 / 现在""官方版 / Neochron"这类说明
 class TutorialCompareStep extends TutorialStep {
   final String title;
   final String leftLabel;

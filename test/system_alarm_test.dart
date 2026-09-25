@@ -89,7 +89,7 @@ void main() {
   });
 
   test('闹钟标题带品牌前缀，时钟里能认出是谁设的', () {
-    expect(systemAlarmLabelFor(task(summary: '交作业')), 'Elychron · 交作业');
-    expect(systemAlarmLabelFor(task(summary: '   ')), 'Elychron · 待办');
+    expect(systemAlarmLabelFor(task(summary: '交作业')), 'Neochron · 交作业');
+    expect(systemAlarmLabelFor(task(summary: '   ')), 'Neochron · 待办');
   });
 }

@@ -14,7 +14,7 @@ const Tutorial tutorialData = Tutorial(
   group: TutorialGroup.data,
   steps: [
     TutorialTextStep(
-      title: 'Elychron 的数据存在本机',
+      title: 'Neochron 的数据存在本机',
       body: [
         '待办、标签、专注记录都存在手机本地，不上传任何服务器。',
         '所以换手机、或者想留个底，都需要你自己导出一次。',
@@ -23,9 +23,9 @@ const Tutorial tutorialData = Tutorial(
     TutorialTipsStep(
       title: '两个导出，用途不同',
       tips: [
-        '导出数据（JSON）：Elychron 的完整备份，含待办、标签、专注记录与设置。',
+        '导出数据（JSON）：Neochron 的完整备份，含待办、标签、专注记录与设置。',
         '导出为 iCal 文件：给别人或别的日历用的标准格式，只含时间与标题。',
-        '要搬回 Elychron 就用 JSON；要导进系统日历/电脑日历就用 iCal。',
+        '要搬回 Neochron 就用 JSON；要导进系统日历/电脑日历就用 iCal。',
       ],
     ),
     TutorialTextStep(
@@ -46,7 +46,7 @@ const Tutorial tutorialData = Tutorial(
       left: [
         '完整备份，能原样搬回去',
         '含标签、专注记录、设置',
-        '只有 Elychron 认识',
+        '只有 Neochron 认识',
       ],
       rightLabel: 'iCal（.ics）',
       right: [

@@ -189,7 +189,7 @@ class _DesktopFrameState extends State<DesktopFrame> {
                   Icon(CupertinoIcons.arrow_down_doc,
                       size: 30, color: AppAccent.primary),
                   const SizedBox(height: 8),
-                  const Text('松手就加进 Elychron',
+                  const Text('松手就加进 Neochron',
                       style:
                           TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),

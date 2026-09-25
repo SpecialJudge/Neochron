@@ -70,7 +70,7 @@ Future<void> promptTutorialIntroOnce(BuildContext context) async {
       content: const Padding(
         padding: EdgeInsets.only(top: 8),
         child: Text(
-          'Elychron 里有几处设置与手势，配好之后会顺手很多：'
+          'Neochron 里有几处设置与手势，配好之后会顺手很多：'
           '图文教程在「设置 → 使用教程」，也可以随时从那里重看。',
           style: TextStyle(fontSize: 14),
         ),

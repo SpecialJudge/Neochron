@@ -11,7 +11,7 @@ import 'package:celechron/utils/data_sync.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// ===== 局域网同步的**客户端**（去连另一台设备的 Elychron）=====
+/// ===== 局域网同步的**客户端**（去连另一台设备的 Neochron）=====
 ///
 /// 用户口径（2026-09-19）：「手机连接的是电脑端」——
 /// 也就是手机上打开「局域网同步 → 连接另一台设备」，填电脑上显示的地址与配对码，
@@ -240,7 +240,7 @@ class LanSyncClient {
     }
     final incoming = DataBundle.decode(raw);
     if (incoming == null) {
-      lastError = '对方给的不是 Elychron 的数据';
+      lastError = '对方给的不是 Neochron 的数据';
       return false;
     }
     final result = await mergeIncomingBundle(incoming: incoming);
@@ -434,7 +434,7 @@ class LanSyncClient {
 
   HttpClient _client() => HttpClient()
     ..connectionTimeout = const Duration(seconds: 6)
-    ..userAgent = 'Elychron-LanSync';
+    ..userAgent = 'Neochron-LanSync';
 
   /// 拉取对方的整份数据，返回**原始 JSON 文本**（DataBundle.decode 吃字符串）
   Future<String?> _getBundleRaw() async {

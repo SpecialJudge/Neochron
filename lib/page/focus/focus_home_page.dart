@@ -44,7 +44,7 @@ class _FocusHomePageState extends State<FocusHomePage> {
     super.initState();
     // ===== 接住被系统中断的专注（2026-09-17 用户反馈）=====
     //
-    // 用户原话：「外面通过分享进入 Elychron 会打断专注」。
+    // 用户原话：「外面通过分享进入 Neochron 会打断专注」。
     // 真相：App 被系统杀掉后，未结算的会话一直躺在库里，下次进专注页就被
     // 当成僵尸结算成异常结束。这里先把它转成"可以继续"，用户就不会白干。
     final db = _db;

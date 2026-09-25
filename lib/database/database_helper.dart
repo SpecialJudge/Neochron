@@ -43,7 +43,7 @@ void _bootProbe(String message) {
 ///
 /// ===== 为什么要这个 =====
 ///
-/// 用户实测（2026-09-16）：更新之后 Elychron 打不开了，
+/// 用户实测（2026-09-16）：更新之后 Neochron 打不开了，
 /// 现象是**进程活着、日志里没有任何异常、first frame 永远不来**，
 /// 系统侧记为 `AppBootFail` + 一条 ANR：说明启动路径被某个 await 卡死了。
 ///

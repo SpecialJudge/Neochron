@@ -127,7 +127,7 @@ class AppErrorLog {
     try {
       // ErrorWidget.builder 可能在任何页面触发；先把完整异常写入 logcat，
       // 否则页面上的摘要不足以定位真正的构建错误。
-      debugPrint('Elychron ErrorWidget: ${details.exceptionAsString()}');
+      debugPrint('Neochron ErrorWidget: ${details.exceptionAsString()}');
       debugPrintStack(stackTrace: details.stack);
       entries.insert(0, details);
       while (entries.length > maxEntries) {

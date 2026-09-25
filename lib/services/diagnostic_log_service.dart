@@ -206,7 +206,7 @@ class DiagnosticLogService {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: 'text/plain')],
-        text: 'Elychron 测试日志：$fileName',
+        text: 'Neochron 测试日志：$fileName',
       ),
     );
     return fileName;
@@ -267,7 +267,7 @@ class DiagnosticLogService {
   Future<Directory> _exportDirectory() async {
     final directory = await getApplicationDocumentsDirectory();
     final exportDirectory =
-        Directory('${directory.path}${Platform.pathSeparator}ElychronLogs');
+        Directory('${directory.path}${Platform.pathSeparator}NeochronLogs');
     await exportDirectory.create(recursive: true);
     return exportDirectory;
   }

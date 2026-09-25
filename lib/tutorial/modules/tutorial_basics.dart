@@ -19,7 +19,7 @@ const Tutorial tutorialBasics = Tutorial(
     TutorialTextStep(
       title: '掌握基本操作',
       body: [
-        '在使用 Elychron 的过程中，许多操作不是通过文字引导的按键实现的。掌握这些手势可以更方便地执行操作，熟练之后能够极大程度提升操作效率',
+        '在使用 Neochron 的过程中，许多操作不是通过文字引导的按键实现的。掌握这些手势可以更方便地执行操作，熟练之后能够极大程度提升操作效率',
       ],
     ),
     TutorialTextStep(

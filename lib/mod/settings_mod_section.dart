@@ -158,7 +158,7 @@ List<Widget> modReminderTiles(
                 trailing: const BackChervonRow(),
                 onTap: () async {
                   await DesktopNotify.ding(
-                    title: 'Elychron 测试提醒',
+                    title: 'Neochron 测试提醒',
                     body: '看到这条就说明桌面通知是通的',
                   );
                   if (context.mounted) {

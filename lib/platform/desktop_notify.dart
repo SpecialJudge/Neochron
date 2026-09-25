@@ -42,7 +42,7 @@ class DesktopNotify {
     _inited = true;
     try {
       await localNotifier.setup(
-        appName: 'Elychron',
+        appName: 'Neochron',
         shortcutPolicy: ShortcutPolicy.requireCreate,
       );
       _ready = true;
@@ -53,7 +53,7 @@ class DesktopNotify {
     }
     try {
       await localNotifier.setup(
-        appName: 'Elychron',
+        appName: 'Neochron',
         shortcutPolicy: ShortcutPolicy.ignore,
       );
       _ready = true;

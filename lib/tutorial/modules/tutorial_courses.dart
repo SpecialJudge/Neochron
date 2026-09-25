@@ -14,14 +14,14 @@ const Tutorial tutorialCourses = Tutorial(
     TutorialTextStep(
       title: '课程页面',
       body: [
-        '为了方便归类某些课程资料等，Elychron允许对课程页面添加文件、评论等。',
+        '为了方便归类某些课程资料等，Neochron允许对课程页面添加文件、评论等。',
         '随手有想要记录的，比如课程评分，上课资料，都可以挂在上面',
       ],
     ),
     TutorialImageStep(
       title: '课程详情页',
       body: <String>[
-        '在原有的课程、上课时间、考试时间之外，Elychron新增了资料、评论、相关待办等选项',
+        '在原有的课程、上课时间、考试时间之外，Neochron新增了资料、评论、相关待办等选项',
       ],
       assets: <String>['assets/tutorial/course/detail.png'],
     ),

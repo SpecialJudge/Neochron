@@ -97,8 +97,8 @@ DateTime? systemAlarmTimeFor(Task task, DateTime now) {
   return candidate;
 }
 
-/// 系统闹钟的标题：`Elychron · 待办标题`（在时钟 App 里能一眼认出是谁设的）
+/// 系统闹钟的标题：`Neochron · 待办标题`（在时钟 App 里能一眼认出是谁设的）
 String systemAlarmLabelFor(Task task) {
   final title = task.summary.trim();
-  return title.isEmpty ? 'Elychron · 待办' : 'Elychron · $title';
+  return title.isEmpty ? 'Neochron · 待办' : 'Neochron · $title';
 }

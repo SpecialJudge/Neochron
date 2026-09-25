@@ -36,15 +36,15 @@ class CalendarToSystemManager {
   ///
   /// 历史版本叫Celechron课表， 那个名字会出现在用户的日历 App 里，
   /// 让人以为装的是官方 Celechron，所以改成本应用的品牌名。
-  static const String elychronCalendarName = 'Elychron课表';
+  static const String elychronCalendarName = 'Neochron课表';
 
   /// 老名字：升级上来的用户日历里已经存在这一份。
   ///
   /// 查找时**必须认领它**（而不是另建一个新日历），否则用户手机上会出现
   /// 两份课表日历；认领后把它删掉再用新名字重建，事件由同步逻辑重新写入。
-  static const List<String> legacyCalendarNames = ['Celechron课表'];
+  static const List<String> legacyCalendarNames = ['Celechron课表', 'Elychron课表'];
 
-  static const String calendarDescription = '由Elychron自动同步的浙大课程表';
+  static const String calendarDescription = '由Neochron自动同步的浙大课程表';
 
   final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
 
@@ -239,7 +239,7 @@ class CalendarToSystemManager {
         }
       }
 
-      // 创建新的 Elychron 课表日历
+      // 创建新的 Neochron 课表日历
       var createResult =
           await _deviceCalendarPlugin.createCalendar(elychronCalendarName);
       if (createResult.isSuccess && createResult.data != null) {

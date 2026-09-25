@@ -187,7 +187,7 @@ class MainActivity: FlutterActivity() {
                     "setSystemAlarm" -> {
                         val hour = call.argument<Int>("hour") ?: -1
                         val minutes = call.argument<Int>("minutes") ?: -1
-                        val label = call.argument<String>("label") ?: "Elychron"
+                        val label = call.argument<String>("label") ?: "Neochron"
                         result.success(setSystemAlarm(hour, minutes, label))
                     }
                     else -> result.notImplemented()

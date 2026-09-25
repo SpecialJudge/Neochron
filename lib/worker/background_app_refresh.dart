@@ -136,7 +136,7 @@ Future<void> refreshScholar() async {
         await flutterLocalNotificationsPlugin.show(
             0,
             '首次成绩推送',
-            '若有新出分的课程，Elychron 将会通知您。若不需要此功能，可在 Elychron 的设置页面中关闭。',
+            '若有新出分的课程，Neochron 将会通知您。若不需要此功能，可在 Neochron 的设置页面中关闭。',
             gradeNotificationDetails);
         await secureStorage.write(
             key: 'pushOnGradeChangeFuse',
@@ -145,7 +145,7 @@ Future<void> refreshScholar() async {
       } else if (scholar.gpa[0] != double.tryParse(oldGpa) ||
           scholar.gradedCourseCount != int.tryParse(gradedCourseCount)) {
         await flutterLocalNotificationsPlugin.show(0, '成绩变动提醒',
-            '有新出分的课程，可在 Elychron 的学业页面中刷新查看。', gradeNotificationDetails);
+            '有新出分的课程，可在 Neochron 的学业页面中刷新查看。', gradeNotificationDetails);
       }
       await secureStorage.write(
           key: 'gpa',

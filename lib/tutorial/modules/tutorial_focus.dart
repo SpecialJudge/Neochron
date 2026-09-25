@@ -9,15 +9,15 @@ import 'package:celechron/tutorial/tutorial_model.dart';
 const Tutorial tutorialFocus = Tutorial(
   id: 'focus',
   title: '专注模式',
-  summary: '为了更精细地管理时间、了解时间消耗，Elychron增加了专注模式',
+  summary: '为了更精细地管理时间、了解时间消耗，Neochron增加了专注模式',
   group: TutorialGroup.focus,
   steps: [
     TutorialImageStep(
       title: '专注模式',
       body: <String>[
-        '为了更精细地管理时间、了解时间消耗，Elychron增加了专注模式。',
+        '为了更精细地管理时间、了解时间消耗，Neochron增加了专注模式。',
         '这个模式下，手机会自动进入免打扰状态，辅助你专心工作。',
-        '同时，Elychron会认真记录你工作的时间。找到时间泄露的缺口，补起来就很方便了！',
+        '同时，Neochron会认真记录你工作的时间。找到时间泄露的缺口，补起来就很方便了！',
         '这是专注模式的页面，包含开始专注、专注对象、专注记录三个部分。',
       ],
       assets: <String>['assets/tutorial/focus/home.png'],
@@ -48,14 +48,14 @@ const Tutorial tutorialFocus = Tutorial(
     ),
     TutorialImageStep(
       body: <String>[
-        '到休息时间时，Elychron会发通知告诉你。',
+        '到休息时间时，Neochron会发通知告诉你。',
         '同时，你也可以随时选择暂停。',
       ],
       assets: <String>['assets/tutorial/focus/paused-effect.png'],
     ),
     TutorialImageStep(
       body: <String>[
-        '这个时候就可以切换到Elychron的其他页面啦，临时想到什么待办非常实用！',
+        '这个时候就可以切换到Neochron的其他页面啦，临时想到什么待办非常实用！',
         '当然，再次回来后，可以继续刚刚暂停的专注。',
       ],
       assets: <String>['assets/tutorial/focus/paused-card.png'],

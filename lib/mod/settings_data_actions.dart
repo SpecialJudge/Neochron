@@ -30,7 +30,7 @@ Future<void> modExportData(BuildContext context) async {
     final file = await DataBackup.writeExportFile(db, taskList);
     await SharePlus.instance.share(ShareParams(
       files: [XFile(file.path)],
-      subject: 'Elychron 备份',
+      subject: 'Neochron 备份',
       sharePositionOrigin:
           box == null ? null : box.localToGlobal(Offset.zero) & box.size,
     ));
@@ -62,7 +62,7 @@ Future<void> modImportData(BuildContext context) async {
   }
   if (bundle == null) {
     if (context.mounted) {
-      modAlert(context, '无法导入', '这个文件不是 Elychron 导出的备份，或者内容已损坏。');
+      modAlert(context, '无法导入', '这个文件不是 Neochron 导出的备份，或者内容已损坏。');
     }
     return;
   }
@@ -120,7 +120,7 @@ Future<void> modImportData(BuildContext context) async {
 
 /// 导入 iCal（.ics）文件：解析出每条日程，转成待办。
 ///
-/// 按用户要求**只进 Elychron 的待办**，不写系统日历。
+/// 按用户要求**只进 Neochron 的待办**，不写系统日历。
 /// 去重靠 iCal 自带的 UID：同一个文件重复导入不会产生重复待办。
 Future<void> modImportIcal(BuildContext context) async {
   try {

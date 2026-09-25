@@ -46,7 +46,7 @@ class FeedbackCopy {
     final log = await DiagnosticLogService.instance.recentText();
     final tail = tailLines(log, logTailLines);
     return '''
-【Elychron 反馈】
+【Neochron 反馈】
 版本：${Fuse.appVersionName} (build ${Fuse.appBuildNumber})
 设备：$device
 

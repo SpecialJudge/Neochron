@@ -311,8 +311,8 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
                   AiConfig.isManualModel
                       ? '当前是手动指定。点自动选择可以交回给应用自动选择。'
                       : (ModelResolver.lastAutoPickReason.isEmpty
-                          ? 'Elychron会自动查询可用模型，并根据价格与官方名称进行选择。'
-                              '官方更名时会自动更改；Elychron无法控制模型价格变动。'
+                          ? 'Neochron会自动查询可用模型，并根据价格与官方名称进行选择。'
+                              '官方更名时会自动更改；Neochron无法控制模型价格变动。'
                           : '自动选择的理由：${ModelResolver.lastAutoPickReason}'),
                 ),
                 children: [
