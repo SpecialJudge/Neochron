@@ -1,5 +1,6 @@
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/semester.dart';
+import 'package:celechron/mod/user_event.dart';
 import 'package:celechron/page/calendar/calendar_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -114,6 +115,97 @@ void main() {
       );
       expect(
         semesterContaining([autumn()], DateTime(2026, 9, 13, 23, 59, 59)),
+        isNull,
+      );
+    });
+  });
+
+  // ==========================================================================
+  // 课表那面的"代表日"：真机实测踩过的坑（2026-09-25）
+  //
+  // 课表是规则表（周一到周日 × N 节），要拿**一个**该星期几的日期当代表去铺日程。
+  // 原来取的是"本学期第一个这个星期几"，于是：
+  //   用户在学期中途（9/25 周五）建了一条每周五的例会，
+  //   而本学期第一个周五是 9/18 —— 早于那条日程的起始日，判定 false，
+  //   课表上**什么都不画**。这不是角落情况，"现在建一条"是最常见的用法。
+  //
+  // 修法：代表日往后推到不早于**它自己**的起始日。注意是"它自己"：
+  // 若取"所有日程里最晚的起始日"，两条同星期几、起始日差很远的日程里，
+  // 早的那条又会看不见 —— 所以必须逐条挑（调用方就是这么用的）。
+  // ==========================================================================
+  group('课表代表日 anchorDateFor', () {
+    UserEvent event(DateTime start, {int dayOfWeek = DateTime.friday}) =>
+        UserEvent(
+          uid: 'e1',
+          title: '学生会例会',
+          startDate: start,
+          dayOfWeek: dayOfWeek,
+          startClock: '19:00',
+          endClock: '20:30',
+          repeatPeriod: 1,
+        );
+
+    _FakeSemester semester() => _FakeSemester.one(
+          '2026-2027-1秋冬',
+          d(9, 14),
+          DateTime(2027, 1, 24),
+        );
+
+    test('起始日早于学期 → 用本学期第一个该星期几（9/18 周五）', () {
+      expect(
+        CalendarController.anchorDateFor(
+            event(DateTime(2026, 8, 1)), semester(), DateTime.friday),
+        d(9, 18),
+      );
+    });
+
+    test('★ 学期中途建的：代表日要推到它自己的起始日（9/25），不能停在 9/18', () {
+      expect(
+        CalendarController.anchorDateFor(
+            event(d(9, 25)), semester(), DateTime.friday),
+        d(9, 25),
+      );
+    });
+
+    test('★ 起始日差很远的两条，各自算各自的代表日（早的不会被拖到后面）', () {
+      expect(
+        CalendarController.anchorDateFor(
+            event(d(9, 18)), semester(), DateTime.friday),
+        d(9, 18),
+      );
+      expect(
+        CalendarController.anchorDateFor(
+            event(DateTime(2026, 12, 25)), semester(), DateTime.friday),
+        DateTime(2026, 12, 25),
+      );
+    });
+
+    test('推到学期之外 → null（它不该出现在这张表上）', () {
+      expect(
+        CalendarController.anchorDateFor(
+            event(DateTime(2027, 3, 1)), semester(), DateTime.friday),
+        isNull,
+      );
+    });
+
+    test('学期最后一个该星期几仍可用', () {
+      expect(
+        CalendarController.anchorDateFor(
+            event(DateTime(2027, 1, 22)), semester(), DateTime.friday),
+        DateTime(2027, 1, 22),
+      );
+    });
+
+    test('没套过校历的学期 → null', () {
+      final noCalendar = _FakeSemester.one(
+        '2026-2027-2春夏',
+        d(9, 14),
+        DateTime(2027, 1, 24),
+        hasCalendar: false,
+      );
+      expect(
+        CalendarController.anchorDateFor(
+            event(d(9, 14)), noCalendar, DateTime.friday),
         isNull,
       );
     });

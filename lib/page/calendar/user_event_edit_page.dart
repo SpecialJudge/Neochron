@@ -242,6 +242,21 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
   // ---------------------------------------------------------------- 界面
 
   /// 一行设置项：左边名字，右边当前值（+ 可选的小箭头）
+  ///
+  /// ===== 布局：名字 + Expanded(值) + 可选小箭头 =====
+  ///
+  /// 这里踩过一个坑（2026-09-25 真机发现，两个症状同一个原因）：
+  /// 原来写的是 `Text(label)` + `Spacer()` + `Flexible(Text(value))`。
+  /// **`Spacer` 会把剩余空间全吃掉**，于是后面那个 `Flexible` 只能缩到
+  /// 内容的固有宽度、紧贴 Spacer 的右边缘停住 —— 造成的现象是：
+  ///
+  /// 1. 「每周」看着**没有右对齐**（它右对齐在"自己那个窄盒子"里，
+  ///    而不是在整个剩余空间的右边）；
+  /// 2. 「第一次发生在」「重复到」这种长文本被压窄 → **明明还有空间却出现省略号**。
+  ///
+  /// 改成一个 `Expanded` 包住值文本：`Expanded` 拿满剩余宽度，
+  /// `textAlign: TextAlign.right` 才真的是"靠到行的右边"，
+  /// 同时长文本也就有了完整的宽度可用。
   Widget _row({
     required BuildContext context,
     required IconData icon,
@@ -265,13 +280,13 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
             Icon(icon, size: 19, color: accent),
             const SizedBox(width: 12),
             Text(label, style: TextStyle(fontSize: 16, color: labelColor)),
-            const Spacer(),
-            if (trailing != null) trailing,
             if (trailing == null)
-              Flexible(
+              Expanded(
                 child: Text(
                   value,
                   textAlign: TextAlign.right,
+                  // 两行封顶：再长也留得住，不会把这一行撑高到看不出是"一行设置项"
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 16,
@@ -280,7 +295,11 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
                         CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
-              ),
+              )
+            else ...[
+              const SizedBox(width: 8),
+              Expanded(child: Align(alignment: Alignment.centerRight, child: trailing)),
+            ],
             if (onTap != null) ...[
               const SizedBox(width: 4),
               const Icon(CupertinoIcons.chevron_forward,
@@ -581,8 +600,24 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
                         : '${until.year} 年 ${until.month} 月 ${until.day} 日',
                     onTap: _pickUntil,
                   ),
-                  if (until != null) ...[
-                    _divider(context),
+                  _divider(context),
+                  // ===== 这一行必须**对称**（2026-09-25 真机发现）=====
+                  //
+                  // 原来只有"有结束日期"时才显示「去掉结束日期」，
+                  // 用户反馈「点了一下这个选项，它直接消失了」——
+                  // 逻辑上没错（清空后那个条件不成立），但操作上是个陷阱：
+                  // 点完就**没有回来的路**了（只能靠再点"重复到"重新选一天）。
+                  //
+                  // 现在两个方向都给出口：有结束日期 → 去掉；没有 → 设置。
+                  if (until == null)
+                    _row(
+                      context: context,
+                      icon: CupertinoIcons.calendar_badge_plus,
+                      label: '设置结束日期',
+                      value: '现在是一直重复',
+                      onTap: _pickUntil,
+                    )
+                  else
                     _row(
                       context: context,
                       icon: CupertinoIcons.clear,
@@ -590,7 +625,6 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
                       value: '放假期间也照常发生',
                       onTap: () => setState(() => _draft.repeatUntil = null),
                     ),
-                  ],
                 ],
               ],
             ),

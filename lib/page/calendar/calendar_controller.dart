@@ -230,21 +230,75 @@ class CalendarController extends GetxController {
 
   /// 课表那面要的：某个星期几在 [semester] 里的自定义日程时段。
   ///
-  /// 课表是**规则表**（周一到周日 × 13 节），所以要的是"这个星期几那一天长什么样"，
-  /// 而不是"某个具体日期"。做法是拿该学期里**第一个**这个星期几的日期当代表
-  /// （例如本学期的第一个周一），再用与日历完全相同的口径铺一次。
+  /// 课表是**规则表**（周一到周日 × N 节），所以要的是"这个星期几那一天长什么样"，
+  /// 而不是"某个具体日期"。做法是给**每一条**日程各挑一个该星期几的代表日，
+  /// 再用与日历完全相同的口径铺一次。
+  ///
+  /// ===== 代表日怎么挑：每条各自挑，且不早于它自己的起始日 =====
+  ///
+  /// 最早我取的是"本学期第一个这个星期几"（例如本学期第一个周五）。
+  /// 真机实测立刻暴露问题：用户在**学期中途**（9/25 周五）建了一条每周五的例会，
+  /// 而本学期第一个周五是 9/18 —— 早于那条日程的起始日，判定直接 false，
+  /// 课表上什么都不画。这不是角落情况，"现在建一条"是最常见的用法。
+  ///
+  /// 改成"所有日程共用最晚的那个起始日"也**不对**：两条周五例会分别从 9/18 与
+  /// 12/25 开始时，代表日被推到 12/25，9/18 那条又看不见了。
+  /// 所以必须**逐条挑**，最后把各自的时段并起来。
   ///
   /// 为什么这样可以：本功能的口径是**自然周几 + 间隔周数**（SPEC.md D3），
   /// 每 N 周才发生的那种在规则表上本来就画不出来 —— 课表只能表示"通常是哪几天"。
   /// 具体哪一周有没有，请看日历那面（那里是按真实日期铺的）。
   List<EventSpan> userEventSpansForWeekday(Semester semester, int weekday) {
-    final anchor = firstDateOfWeekday(semester, weekday);
-    if (anchor == null) return const <EventSpan>[];
-    // 同上：只铺属于这个学期的（+ 不限学期的）。传全量的话，
-    // 别的学期建的例会会出现在这张表上，位置还按本学期的节次算。
-    return userEventCalendarFor(semester)
-        .spansBetween(userEventsForSemester(semester.name), anchor, anchor);
+    final mine = userEventsForSemester(semester.name)
+        .where((event) => event.dayOfWeek == weekday)
+        .toList();
+    if (mine.isEmpty) return const <EventSpan>[];
+
+    final calendar = userEventCalendarFor(semester);
+    final spans = <EventSpan>[];
+    for (final event in mine) {
+      final anchor = anchorDateFor(event, semester, weekday);
+      if (anchor == null) continue;
+      spans.addAll(calendar.spansBetween([event], anchor, anchor));
+    }
+    spans.sort(compareSpan);
+    return spans;
   }
+
+  /// 给**一条**日程挑代表日：本学期第一个星期 [weekday]，往后推到不早于它的
+  /// 起始日；超出学期则 null。**纯逻辑，便于单测。**
+  static DateTime? anchorDateFor(
+    UserEvent event,
+    Semester semester,
+    int weekday,
+  ) {
+    if (!semester.hasCalendar) return null;
+    final first = chopDateStatic(semester.firstDay);
+    final last = chopDateStatic(semester.lastDay);
+
+    DateTime? pending;
+    // 从学期第一天往后找同一天最多 7 天就能碰到
+    for (var offset = 0; offset < 7; offset++) {
+      final candidate = DateTime(first.year, first.month, first.day + offset);
+      if (candidate.isAfter(last)) return null;
+      if (candidate.weekday == weekday) {
+        pending = candidate;
+        break;
+      }
+    }
+    if (pending == null) return null;
+
+    // 代表日不能早于它自己的起始日 —— 否则这条判定为 false、整列空着
+    final start = chopDateStatic(event.startDate);
+    while (pending!.isBefore(start)) {
+      pending = DateTime(pending.year, pending.month, pending.day + 7);
+      if (pending.isAfter(last)) return null; // 推到学期外了，它不该出现在这张表上
+    }
+    return pending;
+  }
+
+  static DateTime chopDateStatic(DateTime day) =>
+      DateTime(day.year, day.month, day.day);
 
   /// 这个学期里第一个星期 [weekday] 的日期（例如本学期第一个周一）；没有则 null
   DateTime? firstDateOfWeekday(Semester semester, int weekday) {
