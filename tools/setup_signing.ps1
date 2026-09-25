@@ -1,4 +1,4 @@
-﻿# Elychron 正式签名一键配置（本地脚本，不需要管理员权限）
+# Neochron 正式签名一键配置（本地脚本，不需要管理员权限）
 #
 # 交互式用法（推荐，密码只在本地输入）：
 #   powershell -ExecutionPolicy Bypass -File tools\setup_signing.ps1
@@ -8,7 +8,7 @@
 #   powershell -ExecutionPolicy Bypass -File tools\setup_signing.ps1 -StorePass 'xxxxxx'
 #
 # 做三件事：
-#   1. 生成 release keystore（如果还没有），DN 只写 Elychron，不含任何真实身份信息
+#   1. 生成 release keystore（如果还没有），DN 只写 Neochron，不含任何真实身份信息
 #   2. 写 android/key.properties（已 gitignore，不会进仓库）
 #   3. 打印下一步构建与验签命令
 #
@@ -20,8 +20,8 @@
 param(
     [string]$StorePass = '',
     [switch]$DryRun,
-    [string]$KeyStorePath = 'D:\keys\elychron-release.jks',
-    [string]$Alias = 'elychron'
+    [string]$KeyStorePath = 'D:\keys\neochron-release.jks',
+    [string]$Alias = 'neochron'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,7 +37,7 @@ function Test-Interactive {
 }
 
 Write-Host ''
-Write-Host '=== Elychron 正式签名配置 ===' -ForegroundColor Cyan
+Write-Host '=== Neochron 正式签名配置 ===' -ForegroundColor Cyan
 Write-Host ''
 
 if (-not (Get-Command keytool -ErrorAction SilentlyContinue)) {
@@ -51,7 +51,7 @@ if ($DryRun) {
     Write-Host ("  keystore         : {0}  ({1})" -f $keyStore, $(if ($keystoreExists) { '已存在，将复用' } else { '不存在，将新建' }))
     Write-Host ("  key.properties   : {0}" -f $keyProps)
     Write-Host ("  alias            : {0}" -f $Alias)
-    Write-Host  "  DN               : CN=Elychron, O=Elychron, C=CN"
+    Write-Host  "  DN               : CN=Neochron, O=Neochron, C=CN"
     Write-Host ("  会写文件吗       : {0}" -f $(if ($keystoreExists) { '只写 key.properties' } else { '写 key.properties + 生成 keystore' }))
     Write-Host ''
     Write-Host 'DryRun 结束，没有改动任何文件 ✓' -ForegroundColor Green
@@ -95,7 +95,7 @@ try {
             -storetype PKCS12 `
             -keyalg RSA -keysize 2048 -validity 10000 `
             -alias $Alias `
-            -dname 'CN=Elychron, O=Elychron, C=CN' `
+            -dname 'CN=Neochron, O=Neochron, C=CN' `
             -storepass $plain -keypass $plain
         if ($LASTEXITCODE -ne 0) { throw "keytool 失败（退出码 $LASTEXITCODE）" }
     }
@@ -115,11 +115,11 @@ try {
     Write-Host '完成 ✓' -ForegroundColor Green
     Write-Host ''
     Write-Host '接下来（在仓库的 ASCII 路径下构建）：' -ForegroundColor Cyan
-    Write-Host '  cd D:\celechron-mod\Celechron'
+    Write-Host '  cd D:\neochron'
     Write-Host '  & ''D:\flutter\bin\flutter.bat'' build apk --release --target-platform android-arm64 --no-tree-shake-icons'
     Write-Host '  & ''C:\Android\Sdk\build-tools\36.0.0\apksigner.bat'' verify --print-certs build\app\outputs\flutter-apk\app-release.apk'
     Write-Host ''
-    Write-Host '验签应看到 CN=Elychron（不是 CN=Android Debug）。' -ForegroundColor Yellow
+    Write-Host '验签应看到 CN=Neochron（不是 CN=Android Debug）。' -ForegroundColor Yellow
     Write-Host '然后立刻把这两样备份到两处（例如密码管理器 + 移动硬盘）：' -ForegroundColor Yellow
     Write-Host "  1) $keyStore"
     Write-Host '  2) 上面那个密码'
