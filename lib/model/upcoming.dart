@@ -49,6 +49,13 @@ class UpcomingItem {
   /// 属于日程（课程/考试/自己安排的日程）时带上它
   final Period? period;
 
+  /// 这条来自**自定义日程**时，用户给它挑的颜色（ARGB）。
+  ///
+  /// null = 不是自定义日程（是课程 / 考试 / 由待办产生的活动），界面按 [kind] 取色。
+  /// 为什么由调用方喂进来、不在这里算：算颜色得知道"这条 uid 对应哪条自定义日程"，
+  /// 而本文件是纯逻辑（只吃 `Period` / `Task`），不该去读存储。
+  final int? eventColorArgb;
+
   const UpcomingItem({
     required this.kind,
     required this.at,
@@ -58,6 +65,7 @@ class UpcomingItem {
     this.detail = '',
     this.task,
     this.period,
+    this.eventColorArgb,
   });
 
   /// 正在进行中（已经开始了但还没结束）
@@ -183,12 +191,16 @@ UpcomingLayout? layoutUpcoming(
 /// - [horizon] 时间上取多远（默认 7 天）
 /// - [limit] 最多几条（默认 8 条）
 /// - 进行中的一条**保留**（否则正在上课时会显示下一节，反直觉）
+/// - [eventColors] 自定义日程 uid -> 用户挑的颜色（ARGB）。给了就挂到条目上，
+///   界面据此给「日程」这一类上色（SPEC.md R3 的四处之一）。不给则全是 null，
+///   行为与本参数不存在时完全一样。
 List<UpcomingItem> buildUpcoming({
   required List<Period> periods,
   required List<Task> tasks,
   required DateTime now,
   Duration horizon = const Duration(days: 7),
   int limit = 8,
+  Map<String, int>? eventColors,
 }) {
   final deadline = now.add(horizon);
   final items = <UpcomingItem>[];
@@ -199,6 +211,7 @@ List<UpcomingItem> buildUpcoming({
     // 已经结束的不看；进行中的保留
     if (!period.endTime.isAfter(now)) continue;
     if (period.startTime.isAfter(deadline)) continue;
+    final fromUid = period.fromUid;
     items.add(UpcomingItem(
       kind: switch (period.type) {
         PeriodType.test => UpcomingKind.exam,
@@ -211,6 +224,8 @@ List<UpcomingItem> buildUpcoming({
       location: period.location.trim(),
       detail: _courseDetail(period.description),
       period: period,
+      // 只有自定义日程的 uid 会命中这张表；课程/考试/待办来的时段查不到，保持 null
+      eventColorArgb: fromUid == null ? null : eventColors?[fromUid],
     ));
   }
 

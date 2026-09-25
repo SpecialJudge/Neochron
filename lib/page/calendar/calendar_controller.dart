@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/design/user_event_palette.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/mod/calendar_fold.dart';
 import 'package:celechron/mod/calendar_paging.dart';
@@ -212,6 +213,32 @@ class CalendarController extends GetxController {
           semesterName == null ||
           event.semesterName == semesterName)
       .toList();
+
+  /// 用户给每条自定义日程挑的颜色（ARGB），按 uid 索引。
+  ///
+  /// 没挑过颜色的那几条在这里也是**固定粉**（[UserEventPalette.resolve] 的口径，
+  /// SPEC.md 字段表：`color` 为 null 即 `#FFA6C9`），不是 `UidColors` 的散列色。
+  /// 现在给「接下来」用（`buildUpcoming` 的 `eventColors`）。
+  Map<String, int> get userEventColorArgbByUid => {
+        for (final event in userEvents)
+          event.uid: UserEventPalette.resolve(event.color).toARGB32(),
+      };
+
+  /// 这条时段属于哪条自定义日程；不是自定义日程就返回 null。
+  ///
+  /// 只按 uid 认：`toPeriod` 把 `fromUid` 填的是日程本身的 uid
+  /// （不是 `<uid>@<日期>` 那个"某一次"的唯一键，见 `user_event_periods.dart`）。
+  /// 于是由**待办**（活动型）产生的 `PeriodType.user` 时段查不到，
+  /// 调用方仍旧让它们走原来那套 `UidColors` 散列色。
+  UserEvent? userEventOfPeriod(Period period) {
+    if (period.type != PeriodType.user) return null;
+    final uid = period.fromUid;
+    if (uid == null) return null;
+    for (final event in userEvents) {
+      if (event.uid == uid) return event;
+    }
+    return null;
+  }
 
   /// [from] 到 [to] 之间（含两端）的自定义日程时段。
   ///

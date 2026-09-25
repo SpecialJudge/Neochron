@@ -253,7 +253,7 @@ class _UpcomingViewState extends State<UpcomingView> {
     final textColor = CupertinoTheme.of(context).textTheme.textStyle.color ??
         CupertinoColors.label;
     final running = item.isRunningAt(now);
-    final accent = running ? CupertinoColors.systemGreen : _accentOf(item.kind);
+    final accent = running ? CupertinoColors.systemGreen : _accentOf(item);
 
     return RoundRectangleCard(
       padding: const EdgeInsets.fromLTRB(0, 16, 18, 16),
@@ -372,7 +372,7 @@ class _UpcomingViewState extends State<UpcomingView> {
         CupertinoDynamicColor.resolve(CupertinoColors.secondaryLabel, context);
     final textColor = CupertinoTheme.of(context).textTheme.textStyle.color ??
         CupertinoColors.label;
-    final accent = _accentOf(item.kind);
+    final accent = _accentOf(item);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -430,13 +430,22 @@ class _UpcomingViewState extends State<UpcomingView> {
   static String _hm(DateTime t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  static Color _accentOf(UpcomingKind kind) => switch (kind) {
-        UpcomingKind.course => AppAccent.primary,
-        UpcomingKind.exam => CupertinoColors.systemRed,
-        UpcomingKind.activity => CupertinoColors.systemPurple,
-        UpcomingKind.deadline => CupertinoColors.systemOrange,
-        UpcomingKind.remind => CupertinoColors.systemBlue,
-      };
+  /// 一条条目的主色。
+  ///
+  /// 自定义日程优先用**用户挑的颜色**（`eventColorArgb`，见 SPEC.md R3 的
+  /// "四处都看得见"）：这样同一条例会在「接下来」和月视图/课表里是同一个色。
+  /// 其余条目（课程/考试/待办产生的活动）仍按 [UpcomingKind] 取原来的固定色。
+  static Color _accentOf(UpcomingItem item) {
+    final argb = item.eventColorArgb;
+    if (argb != null) return Color(argb);
+    return switch (item.kind) {
+      UpcomingKind.course => AppAccent.primary,
+      UpcomingKind.exam => CupertinoColors.systemRed,
+      UpcomingKind.activity => CupertinoColors.systemPurple,
+      UpcomingKind.deadline => CupertinoColors.systemOrange,
+      UpcomingKind.remind => CupertinoColors.systemBlue,
+    };
+  }
 
   static String _kindName(UpcomingKind kind) => switch (kind) {
         UpcomingKind.course => '课程',

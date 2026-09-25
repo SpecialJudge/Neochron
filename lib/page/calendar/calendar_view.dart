@@ -4,6 +4,7 @@ import 'package:celechron/design/card_flip.dart';
 import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/design/sub_title.dart';
 import 'package:celechron/design/task_priority_color.dart';
+import 'package:celechron/design/user_event_palette.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/mod/calendar_paging.dart';
 import 'package:celechron/mod/user_event.dart';
@@ -267,8 +268,8 @@ class CalendarPage extends StatelessWidget {
                           defaultTextStyle:
                               CupertinoTheme.of(context).textTheme.textStyle,
                         ),
-                        calendarBuilders: const CalendarBuilders(
-                          singleMarkerBuilder: singleMarkerBuilder,
+                        calendarBuilders: CalendarBuilders(
+                          singleMarkerBuilder: _singleMarkerBuilder,
                         ),
                       ),
                     ),
@@ -767,13 +768,38 @@ class CalendarPage extends StatelessWidget {
     return '截止 ${toStringHumanReadable(task.endTime)}${task.isOverdue ? ' - 已过期' : ''}';
   }
 
-  /// 这条日程对应的自定义日程；找不到返回 null（多半是刚被删掉）。
-  UserEvent? _userEventOfPeriod(Period period) {
-    if (period.type != PeriodType.user) return null;
-    for (final event in _calendarController.userEvents) {
-      if (event.uid == period.fromUid) return event;
+  /// 这条日程对应的自定义日程；找不到返回 null（多半是刚被删掉，或是待办产生的）。
+  UserEvent? _userEventOfPeriod(Period period) =>
+      _calendarController.userEventOfPeriod(period);
+
+  /// 自定义日程在月视图/当天列表里该用的颜色（用户挑的，没挑就是固定粉）。
+  ///
+  /// **课表那面不走这里**：SPEC.md R3 要求课表格子里一律固定粉，
+  /// 否则会和课程那条时段色阶的品红档/红档撞色（见 `schedule_view.dart`）。
+  Color _userEventColorOf(UserEvent event) =>
+      UserEventPalette.resolve(event.color);
+
+  /// 一条时段在月视图（小方块/小圆点）与当天列表里该用的颜色。
+  ///
+  /// 口径只有这一处，两处调用点共用，免得改了一处漏另一处。
+  /// 与原实现逐字对齐，只多了一条：**自定义日程用它自己选的颜色**
+  /// （`event.color`，没挑过就是固定粉），而由**待办**产生的日程时段
+  /// 仍旧走 `UidColors` 散列色 —— 用户的要求是把这类新日程画出来时能认得出，
+  /// 不是把待办那套颜色一起换掉。
+  Color _periodMarkerColor(Period period) {
+    switch (period.type) {
+      case PeriodType.classes:
+        return TimeColors.colorFromHour(period.startTime.hour);
+      case PeriodType.test:
+        return CupertinoColors.systemPink;
+      case PeriodType.user:
+        final event = _userEventOfPeriod(period);
+        if (event != null) return _userEventColorOf(event);
+        if (period.fromUid == null) return CupertinoColors.inactiveGray;
+        return UidColors.colorFromUid(period.fromFromUid ?? period.fromUid);
+      default:
+        return CupertinoColors.inactiveGray;
     }
-    return null;
   }
 
   /// 点日程卡片：打开编辑页，按用户的选择保存 / 删除（SPEC.md 步 4）。
@@ -862,16 +888,7 @@ class CalendarPage extends StatelessWidget {
                         width: 12.0,
                         height: 12.0,
                         decoration: customDecoration(
-                          color: period.type == PeriodType.classes
-                              ? (TimeColors.colorFromHour(
-                                  period.startTime.hour))
-                              : (period.type == PeriodType.test
-                                  ? CupertinoColors.systemPink
-                                  : (period.type == PeriodType.user &&
-                                          period.fromUid != null
-                                      ? UidColors.colorFromUid(
-                                          period.fromFromUid ?? period.fromUid)
-                                      : CupertinoColors.inactiveGray)),
+                          color: _periodMarkerColor(period),
                           shape: periodTypeShape[period.type]!,
                         ),
                       ),
@@ -990,10 +1007,19 @@ class CalendarPage extends StatelessWidget {
       ],
       tasks: deadlineList.toList(),
       now: now,
+      // 「日程」这一类的颜色：自定义日程用它自己挑的（SPEC.md R3 的四处之一）。
+      // 不给的话它们会和课程/考试一样按 kind 取固定紫。
+      eventColors: _calendarController.userEventColorArgbByUid,
     );
   }
 
-  static Widget singleMarkerBuilder(context, day, Object event) {
+  /// 月视图格子里那个小点/小方块（一条只画一个时用它）。
+  ///
+  /// 原来是 `static`，因为 `CalendarBuilders` 是 const 的、里面塞的是函数引用。
+  /// 现在改成实例方法：要给**自定义日程**上它自己选的颜色，就得能查
+  /// [CalendarController.userEvents]（顺带去掉一处分身）。调用点的 `const`
+  /// 相应去掉，没有别的开销。
+  Widget _singleMarkerBuilder(context, day, Object event) {
     if (event is Task) {
       return Container(
         width: 4.5,
@@ -1017,7 +1043,12 @@ class CalendarPage extends StatelessWidget {
     if (period.type == PeriodType.classes) {
       color = TimeColors.colorFromHour(period.startTime.hour);
     } else if (period.type == PeriodType.user) {
-      color = UidColors.colorFromUid(period.fromFromUid ?? period.fromUid);
+      // 自定义日程用用户挑的颜色（没挑就是固定粉）；由待办产生的日程时段
+      // 查不到对应的自定义日程，于是仍走散列色，与改之前一样。
+      final userEvent = _userEventOfPeriod(period);
+      color = userEvent != null
+          ? _userEventColorOf(userEvent)
+          : UidColors.colorFromUid(period.fromFromUid ?? period.fromUid);
     }
 
     double size = 4.5;

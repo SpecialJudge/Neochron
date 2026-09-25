@@ -901,6 +901,9 @@ COMMIT_MSG_*.txt
 # 诊断日志导出（含学号/成绩等个人信息，绝不入库）
 docs/elychron-test-log-*.txt
 elychron-test-log-*.txt
+# Celechron 数据备份导出（含真实待办/日程/成绩等个人数据，绝不入库）
+docs/celechron-backup-*.json
+celechron-backup-*.json
 # ===== 桌面端提醒音：爱莉原声（受版权保护，只放本地，绝不提交）=====
 # 用外面的 import_voice.ps1 生成；没有它时程序用内置的钢琴提示音。
 assets/sounds/ely_hi.*

@@ -17,6 +17,7 @@ void main() {
     String location = '教三 301',
     PeriodType type = PeriodType.classes,
     String description = '教师: 张老师\n课程代码: MIL1001\n教学时间安排: 秋冬 第1-2节',
+    String? fromUid,
   }) =>
       Period(
         uid: 'p-${start.toIso8601String()}',
@@ -26,6 +27,7 @@ void main() {
         endTime: end,
         location: location,
         summary: summary,
+        fromUid: fromUid,
       );
 
   Task task({
@@ -57,6 +59,7 @@ void main() {
     List<Task> tasks = const [],
     Duration horizon = const Duration(days: 7),
     int limit = 8,
+    Map<String, int>? eventColors,
   }) =>
       buildUpcoming(
         periods: periods,
@@ -64,6 +67,7 @@ void main() {
         now: now,
         horizon: horizon,
         limit: limit,
+        eventColors: eventColors,
       );
 
   group('排序索引', () {
@@ -519,6 +523,55 @@ void main() {
       expect(layout.head.title, '专业课');
       expect(layout.otherRunning, isEmpty);
       expect(layout.later.map((e) => e.title), ['later']);
+    });
+  });
+
+  /// SPEC.md R3：「接下来」也要能认出这是哪条自定义日程。
+  /// 颜色由调用方喂进来（`CalendarController.userEventColorArgbByUid`），
+  /// 本文件只负责把它挂到对应的条目上。
+  group('自定义日程的颜色', () {
+    // 注意别用上午的课：本文件的 now 是当天 10:00，已经结束的时段会被过滤掉
+    Period course() => period(
+          start: DateTime(2026, 9, 12, 13, 30),
+          end: DateTime(2026, 9, 12, 15, 5),
+        );
+
+    Period mine({String? fromUid}) => period(
+          start: DateTime(2026, 9, 12, 19, 0),
+          end: DateTime(2026, 9, 12, 20, 30),
+          summary: '学生会例会',
+          type: PeriodType.user,
+          fromUid: fromUid,
+        );
+
+    test('uid 命中就带上颜色', () {
+      final items = build(
+        periods: [mine(fromUid: 'evt-1')],
+        eventColors: const {'evt-1': 0xFF66CCFF},
+      );
+      expect(items.single.eventColorArgb, 0xFF66CCFF);
+    });
+
+    test('uid 对不上（待办产生的日程没有 fromUid）→ 仍是 null', () {
+      final items = build(
+        periods: [mine(), mine(fromUid: 'evt-别的')],
+        eventColors: const {'evt-1': 0xFF66CCFF},
+      );
+      expect(items.every((e) => e.eventColorArgb == null), isTrue);
+    });
+
+    test('课程/考试不带 fromUid，不受影响', () {
+      final items = build(
+        periods: [course()],
+        eventColors: const {'evt-1': 0xFF66CCFF},
+      );
+      expect(items.single.kind, UpcomingKind.course);
+      expect(items.single.eventColorArgb, isNull);
+    });
+
+    test('不给 eventColors：老行为一点没变（全是 null）', () {
+      final items = build(periods: [mine(fromUid: 'evt-1')]);
+      expect(items.single.eventColorArgb, isNull);
     });
   });
 }
