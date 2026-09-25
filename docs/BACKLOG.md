@@ -32,19 +32,91 @@
   D4 两种时间口径都支持、D5 第一期不做提醒、D6 假期不动调休跟着走、
   D7 先只做整条删、D8 不做点空白新建、D9 第二期、D10 叠加显示不自动调整。
   R3 补充：**自定义日程在课表里统一用粉色，与课程的时段色阶区分开。**
-- **状态**：等 SPEC.md 与实施计划双确认后开工。
+- **状态**：**步 1、2、3（数据层）已完成并提交**，三处都在各自的 `feat/` 分支上。
+  **第 3 步的界面接线、以及第 4 步起还没做。**
+
+### 验证记录
+
+| 时间 | 验证者 | 结果 |
+| --- | --- | --- |
+| 2026-09-25 | 用户终端 `flutter test`（**全量**） | ✅ **742 个用例全过**（基线 669 + 本次新增 73） |
+| 2026-09-25 | 我（提交前必跑） | `dart analyze --no-fatal-warnings` → 0 error（176 issues，与基线一致） |
+
+我在沙箱里跑不了 `flutter test`（不允许 Dart 启动子进程），所以**每一步都需要用户跑一次全量测试**：
+
+```powershell
+cd D:\neochron
+flutter test
+```
+
+我能自己跑的只有两样：`dart analyze`，以及**纯逻辑部分**的临时验证程序
+（把纯 Dart 文件复制到临时目录、import 改相对路径后跑断言，**不进仓库**）。
+这个手段已经抓到一个真 bug（见下面「已抓到的真 bug」）。
 
 ### 拆解（每步一个分支，做完一步给一次 analyze + test 原始结果）
 
-| 步 | 分支 | 内容 | 完成判据 |
+| 步 | 分支 | 内容 | 状态 |
 | --- | --- | --- | --- |
-| 1 | `feat/user-event-model` | `UserEvent` 模型 + 发生规则纯函数（自然周几 + 间隔 + 截止日） | 规则单测全绿，含边界与跨学期不越界 |
-| 2 | `feat/user-event-store` | 独立 box + 墓碑 + store（照 `course_mount_store.dart`，不新增 typeId） | 脏数据整条丢弃不崩；老数据不受影响 |
-| 3 | `feat/user-event-calendar` | 展开成 `Period`、接进月视图当天列表与「接下来」 | 单测 + 手测 |
-| 4 | `feat/user-event-edit-page` | 新建/编辑页 + `+` 弹选择 | 手测 |
-| 5 | `feat/user-event-timetable` | 接进课表格子（两种时间口径、冲突叠加、**粉色**） | 手测 + 真机截图 |
-| 6 | `feat/user-event-sync` | 导出/导入/局域网同步/合并四处一起改 | 新增同步单测；老备份仍能导入 |
-| 7 | `docs/user-event-docs` | 更新 `MULTI_DEVICE_SYNC.md` 与 `FEATURES.md` 相关段落 | 文档与实现一致 |
+| 1 | `feat/user-event-model` | `UserEvent` 模型 + 发生规则纯函数（自然周几 + 间隔 + 截止日） | ✅ 已提交 `0000b57` |
+| 2 | `feat/user-event-store` | 独立 box + 墓碑 + store（照 `course_mount_store.dart`，不新增 typeId） | ✅ 已提交 `976cf19` |
+| 3 | `feat/user-event-calendar` | 展开成 `Period`、接进月视图当天列表与「接下来」 | 🔶 数据层已提交 `7ddb444`，**界面接线未做** |
+| 4 | `feat/user-event-edit-page` | 新建/编辑页 + `+` 弹选择 | 未开始 |
+| 5 | `feat/user-event-timetable` | 接进课表格子（两种时间口径、冲突叠加、**粉色**） | 未开始 |
+| 6 | `feat/user-event-sync` | 导出/导入/局域网同步/合并四处一起改 | 未开始 |
+| 7 | `docs/user-event-docs` | 更新 `MULTI_DEVICE_SYNC.md` 与 `FEATURES.md` 相关段落 | 未开始 |
+
+### 步 1、2、3 的实际产出
+
+| 文件 | 作用 |
+| --- | --- |
+| `lib/mod/user_event.dart` | 模型（字段、自洽校验、toMap/fromMap、copyWith、说法文案） |
+| `lib/mod/user_event_rule.dart` | 发生判定（纯逻辑）：occursOn / occurrencesBetween / nextOccurrence |
+| `lib/mod/user_event_date.dart` | 三行的日期助手（见下「为什么多开一个文件」） |
+| `lib/mod/user_event_merge.dart` | 合并口径（纯逻辑）：同 uid 比 updatedAt、墓碑优先、幂等 |
+| `lib/mod/user_event_tombstone.dart` | 删除墓碑（uid -> 删除时刻）+ 同步包 wire 格式 + 过期清理 |
+| `lib/mod/user_event_store.dart` | Hive/Get 接线：读写、保存即清墓碑、删除先留墓碑、同步包 |
+| `lib/mod/user_event_periods.dart` | **日程 -> 可显示时段**：节次↔钟点换算、发生日展开、与课程冲突判定、到 `Period` 的薄转换 |
+| `lib/database/database_helper.dart` | 加两个盒子 `userEventBox` / `userEventTombstoneBox`（**不新增 typeId**） |
+| `lib/model/semester.dart` | 加一个**只读**访问器 `periodTimes`（节次→钟点换算表），让日程用与课程同一套口径 |
+| `test/user_event_*.dart` 4 个 | 单测（判定 / 合并 / 墓碑 / 时段展开） |
+
+### 步 3 的分层与「为什么计算层不碰 Period」
+
+`UserEventCalendar` 只做计算，产出自己的轻量类型 `EventSpan`；
+把它变成真 `Period` 是文件末尾两个**逻辑为零**的函数（字段一一对应）。
+
+这么分是因为 **`Period` 会把 Flutter 拖进来**
+（`period.dart` → `time_helper.dart` → `utils.dart` → `flutter_secure_storage`）：
+一旦在计算里直接用 `Period`，"节次换算对不对、哪天该铺、像不像冲突"
+这些最容易算错的东西就没法脱离 Flutter 环境验证了。
+拆开之后，计算层可以整段拿去纯 Dart 跑（第 3 步 38 项断言就是这么验的）。
+
+### 已抓到的真 bug（值得留着当教训）
+
+**「只这一次」被当成了「每周」**：判定第 3 步原来写成
+`if (!isSingleOccurrence) { 检查整周差 }`，于是 `repeatPeriod = 0` 时整段检查被跳过、
+又没截止日拦着 → 9/14 建的日程，9/21 也判成发生。
+
+**是靠跑起来发现的，不是读代码看出来的**。回归用例已补狠（下一周不发生、一年后也不发生、
+扫一整年只应该有一天、负数间隔同样当只这一次）。
+
+### 另一个坑（这次是验证程序自己的错，值得记）
+
+验证程序里给"按节次"的构造助手写了个默认值 `endPeriod = 5`。于是传
+`startPeriod: 6` 却不传 `endPeriod` 时，得到"第 6 节开始、第 5 节结束"——
+开始晚于结束，被 `spanOf` 按「单时刻」折成零长度，冲突判定于是永远不成立。
+表面看像判定写错了，实际是测试夹具的默认值坑人。
+
+两条教训都写进了代码注释与单测助手的注释里。
+
+### 为什么多开一个 `user_event_date.dart`
+
+仓库里现成的 `dateOnly` 在 `lib/utils/utils.dart`，那个文件 import 了
+`flutter_secure_storage`；一旦引进来，判定与合并就**没法脱离 Flutter 环境验证**了。
+而这轮的 bug 正是靠"能脱离 Flutter 跑"抓到的，所以值得为它留一个三行的叶子文件。
+
+（同时避免 `user_event.dart` 与 `user_event_rule.dart` 互相 import：
+那样两个同名顶层函数会在同时 import 两者的文件里撞成 `ambiguous import`，实测过。）
 
 ### 本任务已核实的代码事实（免得下一个人重查）
 
