@@ -1,4 +1,4 @@
-# Neochron 正式签名一键配置（本地脚本，不需要管理员权限）
+﻿# Neochron 正式签名一键配置（本地脚本，不需要管理员权限）
 #
 # 交互式用法（推荐，密码只在本地输入）：
 #   powershell -ExecutionPolicy Bypass -File tools\setup_signing.ps1
