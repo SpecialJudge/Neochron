@@ -23,7 +23,7 @@
 | 版本号 | `1.4.2-elychron.1+10` | 后缀里的 `elychron` 待下次发版换掉（BACKLOG I10）|
 | 图标 / `assets/logo.png` | 自己的（爱莉希雅粉，`ed00918`）| ✅ 见 P0-3 |
 | LICENSE | GPLv3 | 有义务，见「三、合规」|
-| 仓库 | 上一代在 `Elyyyyyyyyxer/Elychron`（public）；**本项目要迁到用户自己的仓库** | 见 BACKLOG I12 |
+| 仓库 | 本项目：`SpecialJudge/Neochron`（public）；上一代在 `Elyyyyyyyyxer/Elychron` | 见 BACKLOG I12 |
 | minSdk | 28（Android 9+）| 校园机型覆盖率够 ✓ |
 
 ---

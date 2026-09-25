@@ -99,7 +99,10 @@ class Fuse {
   /// 2. 他们从那下到的是官方包，而两个 App 的包名不同，
   ///    结果是手机上多出**第二个应用**，用户一脸懵；
   /// 3. 频繁请求别人的服务器本身也不合适。
-  static const String releaseRepo = 'Elyyyyyyyyxer/Elychron';
+  /// 2026-09-25 迁到**本项目自己的**仓库（原来是上一代维护者的
+  /// `Elyyyyyyyyxer/Elychron`）。换了仓库名/所有者之后这里必须同步改，
+  /// 否则"检查更新"查的是别人的项目。
+  static const String releaseRepo = 'SpecialJudge/Neochron';
   static const String releasePageUrl =
       'https://github.com/$releaseRepo/releases/latest';
   static const String releaseApiUrl =

@@ -121,13 +121,17 @@ List<Uri> calendarConfigUriCandidates(String semesterId) {
     http.replace(scheme: 'https'),
     // ② 上游原站：HTTP（实际能用的那一个）
     http,
-    // ③④ 我们自己的镜像（**HTTPS**）：内容和随包内置的那份同源，
+    // ③④ 镜像（**HTTPS**）：内容和随包内置的那份同源，
     //     仓库里就有 assets/calendar/*.json，所以 raw 地址天然可用。
     //     国内直连 Gitee 更快，GitHub 作为第二个备选。
+    //     ⚠️ ③ 的 Gitee 镜像**不是本项目的**（是上一代维护者搭的）：留着当额外备选，
+    //     它哪天没了也不要紧 —— ①② 是上游原站，④ 是本项目自己的仓库，
+    //     而且包里还随包内置了一份（见 calendar_bundled_config.dart）。
     Uri.parse(
         'https://gitee.com/P3RF3CT/elychron/raw/main/assets/calendar/$key'),
+    // ④ 本项目自己的仓库（2026-09-25 从上一代 `Elyyyyyyyyxer/Elychron` 迁过来）
     Uri.parse(
-        'https://raw.githubusercontent.com/Elyyyyyyyyxer/Elychron/main/assets/calendar/$key'),
+        'https://raw.githubusercontent.com/SpecialJudge/Neochron/main/assets/calendar/$key'),
   ];
 }
 

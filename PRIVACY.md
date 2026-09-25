@@ -24,7 +24,7 @@ Neochron（Celechron 的非官方修改版）**没有自己的服务器**：不�
    只取学年学期日期这类**公开信息**，不含任何用户数据；请求失败会依次回退到
    同学期缓存 → 本地推算，不影响功能可用性。
 4. **检查更新**：每天最多一次请求 GitHub API
-   （`api.github.com/repos/Elyyyyyyyyxer/Elychron/releases/latest`），
+   （`api.github.com/repos/SpecialJudge/Neochron/releases/latest`），
    只读取版本号与更新说明；异常时静默跳过。**这一条会向 GitHub 暴露你的 IP**。
 5. **关于页的贡献者列表**：打开时请求 GitHub API 读取上游仓库的贡献者名单，同样是公开信息。
 6. **AI 整理（默认关闭）**：你需要自己填模型服务商的 Key（当前支持 DeepSeek）。
@@ -76,4 +76,4 @@ Neochron（Celechron 的非官方修改版）**没有自己的服务器**：不�
 
 ## 联系方式
 
-有问题请提到 [本仓库 Issues](https://github.com/Elyyyyyyyyxer/Elychron/issues)。
+有问题请提到 [本仓库 Issues](https://github.com/SpecialJudge/Neochron/issues)。

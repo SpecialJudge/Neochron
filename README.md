@@ -1,9 +1,5 @@
 # Neochron —— Celechron 的非官方改版（第三代）
 
-> ⚠️ **本 README 还没改完**：项目名与出处已经改成 Neochron，但文中凡是**指向具体仓库地址**
-> 的链接（下载、Issues、更新检查、隐私说明里的 GitHub API）**目前仍指向上一代仓库**，
-> 等本仓库自己的地址确定后统一替换。待办清单见 `docs/BACKLOG.md` 的 **I12**。
-
 > **这是 Celechron 的非官方修改版（fork），不是官方发布。**
 >
 > - 项目渊源：**Celechron**（官方，面向浙大学生的时间管理器）
@@ -22,7 +18,7 @@
 
 ## 下载与安装
 
-到 [Releases](https://github.com/Elyyyyyyyyxer/Elychron/releases/latest) 下载 APK 直接安装。
+到 [Releases](https://github.com/SpecialJudge/Neochron/releases/latest) 下载 APK 直接安装。
 
 - 只提供 **arm64** 包（近年的校园机型都支持）
 - 与官方 Celechron **包名不同，可以共存**，装它不会覆盖官方版，两边数据互不影响
@@ -197,7 +193,7 @@ flutter build apk --release --target-platform android-arm64 --no-tree-shake-icon
 
 ## 八、反馈
 
-- 问题与建议：[Issues](https://github.com/Elyyyyyyyyxer/Elychron/issues)
+- 问题与建议：[Issues](https://github.com/SpecialJudge/Neochron/issues)
 - 报问题时请附上 **设置 → 诊断与测试 → 导出并分享 TXT** 的日志（已自动脱敏，
   密码 / Cookie / 学号都不会带出去），比截图有用得多
 - 上手教程见 [docs/FEATURES.md](docs/FEATURES.md) ｜ 版本说明见
