@@ -72,6 +72,7 @@ Flutter 跨平台跨的是 **UI 层与 Dart 运行时**，不是整个 App。所
 | 标签库 + 标签颜色 | ✅ 已有 | |
 | 提醒方式 / 默认提前量 / 闹钟配色 / 亮度模式 | 部分已有 | 都是小标量，一起带 |
 | 课程代码自定义映射 | ❌ | **是用户手动配的** → 要同步 |
+| **自定义日程（学生组织例会那种）** | ✅ **已有** | 2026-09-25 加：`DataBundle.userEvents` + `userEventTombstones`（见下）|
 | **专注记录 `dbFocus`** | ❌ | 要同步（统计页多端一致才有意义）|
 | 专注参数（工作时长/休息时长/休息提醒）| ❌ | 要同步 |
 | **附件文件本体** | ❌ | 要同步，但**单独一个阶段**（sha1 命名 + 懒下载，见 S3）|
@@ -91,6 +92,30 @@ Flutter 跨平台跨的是 **UI 层与 Dart 运行时**，不是整个 App。所
 
 > 如果你坚持要同步凭据，那第 6 条的「不做应用层加密」就必须推翻（明文 HTTP 传密码不可接受），
 > 我会改成「先做一次端到端加密的密钥交换」—— 这是个明显更大的工程。
+
+### 自定义日程是怎么进同步包的（2026-09-25）
+
+功能本身见 [FEATURES.md](FEATURES.md) 的「自定义日程」一节。这里只记同步侧的口径：
+
+| 项 | 值 |
+|---|---|
+| 包里新增的键 | `userEvents`（每条是 `UserEvent.toMap()` 的形状）、`userEventTombstones`（`{uid: 删除时刻毫秒}`）|
+| 契约版本 | **没动**（仍是 `version = 2`，`format` 仍是 `celechron-mod`）—— 只加字段，老备份照常导入，老客户端读到未知键会忽略 |
+| 合并口径 | 同 uid 比 `updatedAt`（新的赢）、**墓碑优先**、删完之后又编辑过的会复活、合并幂等。实现是 `lib/mod/user_event_merge.dart`（纯逻辑，有单测）|
+| 存储 | 独立盒子 `dbUserEvent` / `dbUserEventTombstone`，值存 Map/JSON，**不新增 Hive typeId** |
+
+**为什么只改了 `DataBundle` 与 `DataBackup.applyMerge` 就够**（免得以后以为漏了）：
+局域网同步的两个方向（当服务器收推送、当客户端拉取）都走 `mergeIncomingBundle`，
+而它内部调的正是 `DataBackup.applyMerge(bundle: incoming)`。
+所以导出/导入与局域网同步**共用同一个载体与同一条合并路径**，
+`lan_sync_client.dart` / `lan_sync_server.dart` 一行都不用改。
+
+**墓碑为什么带删除时刻**（而不是只存 uid 集合）：没有时刻就无法判断
+「删完之后又编辑过的该不该复活」。这与待办的 `TaskTombstone` 是同一口径。
+墓碑默认保留 **180 天**，之后由 `UserEventStore.pruneUserEventTombstones` 清掉
+（一台设备删过、另一台半年没上线的情况本来也不会再看见那条日程）。
+清理的调用点在 `CalendarController.loadUserEvents()`：日程页建起来时顺手清一次，
+幂等、代价很小；**不清的话墓碑会随删除次数无限长下去**。
 
 
 ---

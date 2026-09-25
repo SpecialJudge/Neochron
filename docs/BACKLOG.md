@@ -32,11 +32,48 @@
   D4 两种时间口径都支持、D5 第一期不做提醒、D6 假期不动调休跟着走、
   D7 先只做整条删、D8 不做点空白新建、D9 第二期、D10 叠加显示不自动调整。
   R3 补充：**自定义日程在课表里统一用粉色，与课程的时段色阶区分开。**
-- **状态**：**步 1、2、3、4 已完成并提交**。
-  **下一步是第 5 步（接进课表格子，固定粉 `#FFA6C9`）**，
-  它做完需要一次**真机验收**（那一步的产出是视觉上的，单测测不出来）。
+- **状态**：**七步的代码与文档都写完了**。
+  - 步 1、2、3、4 已提交；
+  - **步 5（课表格子）、步 6（同步）、步 7（文档）尚未提交**，等下面两件事：
+    ① 用户跑一次全量 `flutter test`（我这边跑不了）；
+    ② 用户**真机看一遍**（步骤见 `tools/manual_check_user_event.md`）。
 - ⚠️ **界面部分没有自动化验证**：编辑页与课表格子只能靠真机看，
   `dart analyze` 只保证编译得过，保证不了布局不溢出、点击不报错。
+- **步 6 为什么只改两处就够**（免得以后以为漏了）：
+  `DataBundle` 同时是「导出/导入」和「局域网同步」的载体，
+  而局域网两条方向的公共入口 `mergeIncomingBundle` 调的也是
+  `DataBackup.applyMerge(bundle: …)` —— 所以只改 `DataBundle` + `applyMerge` 就覆盖全了，
+  `lan_sync_client` / `lan_sync_server` 一行都不用动。
+- **步 3 那个失败的复盘**（值得记住）：
+  课表格子那一段我**凭印象编了一张节次表**（把第 12 节写成 19:40-20:30），
+  真实是 19:40-**20:25**（第 13 节 20:30 开始），于是推出了一条错误的边界规则。
+  修法是把规则改成「取距离最近的节边界、平局取靠前」，
+  并**把测试数据换成从 `assets/calendar/*.json` 抄出来的真实 15 节**。
+  教训：**凡是与校历数字有关的测试，数据必须来自校历文件，不能凭印象写。**
+- **已修：课表从 13 行扩到 15 行**（2026-09-25 用户拍板）。
+  原来 `schedule_view.dart` 写死 13 行、`sessionTime` 却有 15 节，
+  于是第 14、15 节（21:20 之后）的**课程与自定义日程都画不出来**。
+  现在两边共用一个常量（`ScheduleView._rowCount` / `TimetableRowLayout.rowCount`），
+  左侧时间表补齐第 14、15 节（21:20 / 22:10），网格高度下限从 380 提到 460
+  （15 行按 380 分只有 25px/行，字会挤到看不清）。
+  ⚠️ 这是**排版改动，需要真机看**：行更矮了，课程卡片与日程卡片都变小。
+- **已修的另一个真 bug（2026-09-25，静态复查发现）**：课表与日历那两处取数
+  用的是**全量** `userEvents`，于是**下学期建的例会会出现在本学期那张表上**
+  （位置还按本学期的节次算，而且没有对应课表可对照）。
+  修法：两处都改成只铺**属于该学期**的日程（外加没写学期的那种"不限学期"）。
+  回归测试见 `test/user_event_semester_filter_test.dart`。
+- **写文档时发现并补上的漏**：`pruneUserEventTombstones`（墓碑 180 天清理）
+  写了却**没有任何地方调用** → 墓碑会随删除次数无限增长。
+  已接在 `CalendarController.loadUserEvents()` 里（幂等、代价很小）。
+- **已修的第三个真缺口（2026-09-25 静态复查发现）**：**点日程卡片什么都不会发生**。
+  `createCard` 的 tap 只在 `deadlineList` 里按 `fromUid` 找待办，而自定义日程不在待办里
+  → 点下去没有任何反应，卡片上那个打钩圆圈同理也不显示。
+  现在接通了：**点卡片 → 编辑页（标题栏右侧有删除入口）→ 保存或删除 → 日程页刷新**。
+  退出契约从 `UserEvent?` 换成了 `UserEventEditResult`（`saved` / `deleted`），
+  好让"取消"与"删除"分得清。
+- **入口自检**（免得再出现"写了函数没人调"）：`+` → `newUserEvent` ✓、
+  卡片 → `_editUserEventCard` ✓、`saveUserEvent` / `deleteUserEvent` /
+  `replaceUserEvents` / `pruneUserEventTombstones` 各自都有调用点 ✓。
 
 ### 验证记录
 
@@ -65,9 +102,9 @@ flutter test
 | 2 | `feat/user-event-store` | 独立 box + 墓碑 + store（照 `course_mount_store.dart`，不新增 typeId） | ✅ 已提交 `976cf19` |
 | 3 | `feat/user-event-calendar` | 展开成 `Period`、接进月视图当天列表与「接下来」 | ✅ 已提交 `7ddb444`（数据层）+ `28be44b`（接线） |
 | 4 | `feat/user-event-edit-page` | 新建/编辑页 + `+` 弹选择 | ✅ 已提交 `9c9bd80`（数据层）+ `bf5aafc`（界面） |
-| 5 | `feat/user-event-timetable` | 接进课表格子（两种时间口径、冲突叠加、**粉色**） | 未开始 |
-| 6 | `feat/user-event-sync` | 导出/导入/局域网同步/合并四处一起改 | 未开始 |
-| 7 | `docs/user-event-docs` | 更新 `MULTI_DEVICE_SYNC.md` 与 `FEATURES.md` 相关段落 | 未开始 |
+| 5 | `feat/user-event-timetable` | 接进课表格子（两种时间口径、冲突叠加、**粉色**） | 🔶 已写完待验证 + **需真机看** |
+| 6 | `feat/user-event-sync` | 导出/导入/局域网同步/合并四处一起改 | 🔶 已写完待验证 |
+| 7 | `docs/user-event-docs` | 更新 `MULTI_DEVICE_SYNC.md` 与 `FEATURES.md` 相关段落 | ✅ 已写（`FEATURES.md` 七之二 + 同步一节）|
 
 ### 步 1、2、3 的实际产出
 
