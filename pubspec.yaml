@@ -118,8 +118,29 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
 
+# ===== 应用图标（2026-09-25 换成新美术；本轮**只出 Android**）=====
+# 母版放 tools/app-icon/：**故意不放 assets/** —— assets 下任何文件都会被打进 APK，
+# 而这张 1024 母版只在构建时用一次（关于页那张是另存的 512 版本）。
+# ⚠️ 这个目录**不能**叫 tools/icon：.gitignore 里有一条从 macOS 模板抄来的裸规则
+#   `Icon`（L242 与 L658 各一条，本意是忽略 macOS 那个名字带 \r 的卷图标文件），
+#   本机 core.ignorecase=true 会把它当成 `icon` 匹配掉整个目录 —— 母版静默不入库，
+#   而 pubspec 却指着它（2026-09-25 实测踩到，故改名 app-icon）。
+# 自适应图标走「满铺」：背景 = 母版，前景 = 全透明占位图 + inset 0。
+#   为什么不按默认的「前景缩小 16%」：实测这张美术的墨迹**内接于画布内切圆**，
+#   圆形与圆角方形遮罩裁掉的墨迹都是 0.0%，所以满铺不丢内容、只是把图案
+#   从约 70dp 放大到约 104dp，桌面图标看着更饱满。
+# 传统图标（mipmap-*/ic_launcher.png）仍由 image_path 整图缩放生成。
+# ⚠️ 资源名必须保持 ic_launcher：通知小图标在 4 处代码里写死了 @mipmap/ic_launcher
+#   （main.dart / task_reminder.dart / option_controller.dart / background_app_refresh.dart）。
+# ⚠️ ios: false 是**本轮有意关掉**：iOS 与 macOS 那两套至今仍是上游旧美术
+#   （iOS icon.png 的 blob 自上游 94fca84 起没变过），换代要连 Contents.json
+#   与 macos 那 7 张一起处理，单开一轮，见 docs/BACKLOG.md。
+#   remove_alpha_ios 留着不删：等做 iOS 那轮还要用。
 flutter_launcher_icons:
-  image_path: assets/logo.png
+  image_path: tools/app-icon/app_icon.png
   android: true
-  ios: true
+  ios: false
+  adaptive_icon_background: tools/app-icon/app_icon.png
+  adaptive_icon_foreground: tools/app-icon/app_icon_foreground_transparent.png
+  adaptive_icon_foreground_inset: 0
   remove_alpha_ios: true
