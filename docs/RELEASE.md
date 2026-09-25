@@ -13,17 +13,17 @@
 功能层面**已经远超发布门槛**（四种时间语义、子待办行程表、专注计时、AI 整理、
 局域网同步都是上游没有的）。剩下的是**工程与合规的收尾**，与功能质量无关。
 
-已核实的事实（2026-09-12）：
+已核实的事实（2026-09-12；**2026-09-25 有一轮更正，见「四、签名步骤」**）：
 
 | 事实 | 值 | 影响 |
 |---|---|---|
 | applicationId | `xyz.nosig.celechron.mod` | 与上游 `xyz.nosig.celechron` **不同** → 两个 App 可共存 ✓ |
-| 签名 | `signingConfig signingConfigs.debug` | ✗ **必须换**（见 P0-2）|
-| 更新检查 | 已改为自己的 GitHub Releases API | ✅ 见 P0-1 |
-| 版本号 | `1.4.0-elychron.1+4` | ✅ 见 P1-1 |
+| 签名 | ✅ 2026-09-25 起用**本项目自己的** release 密钥（`CN=Neochron`）| 见「四、签名步骤」；`android/key.properties` 在则用它，不在才退回 debug |
+| 更新检查 | 已改为自己的 GitHub Releases API | ✅ 见 P0-1 —— **但地址仍指向上一代仓库，待随仓库搬迁一起改**（BACKLOG I12）|
+| 版本号 | `1.4.2-elychron.1+10` | 后缀里的 `elychron` 待下次发版换掉（BACKLOG I10）|
 | 图标 / `assets/logo.png` | 自己的（爱莉希雅粉，`ed00918`）| ✅ 见 P0-3 |
 | LICENSE | GPLv3 | 有义务，见「三、合规」|
-| 仓库 | `Elyyyyyyyyxer/Elychron`（public）| ✅ 见 P0-4 |
+| 仓库 | 上一代在 `Elyyyyyyyyxer/Elychron`（public）；**本项目要迁到用户自己的仓库** | 见 BACKLOG I12 |
 | minSdk | 28（Android 9+）| 校园机型覆盖率够 ✓ |
 
 ---
@@ -49,14 +49,18 @@
   地方 —— 只读、不含用户数据、失败会多级降级（缓存 → 本地推算）。
   已在代码里写明，并写进隐私说明与风险表。
 
-### P0-2 用自己的签名
+### P0-2 用自己的签名 ✅ **已于 2026-09-25 解决**
 
-- **现状**：`android/app/build.gradle` 的 release 用 `signingConfigs.debug`。
-- **为什么必须换**：
+- **当时的问题**：`android/app/build.gradle` 的 release 用 `signingConfigs.debug`。
+- **为什么必须换**（留着当理由备查）：
   - debug 签名的包**以后无法覆盖升级**（除非永远用同一台机器的 debug key）；
   - 部分安全软件/系统会拦「调试签名」；
   - **签名一旦发出去就换不了** —— 换签名 = 用户必须卸载重装 = **待办数据全丢**。
-- **怎么做**：见下面「四、签名步骤」。**keystore 必须备份到两处**（丢了就再也发不了升级）。
+- **现在**：已在用户机器上生成本项目**自己的** release 密钥并接上（见「四、签名步骤」）。
+  **keystore 必须备份到两处**（丢了就再也发不了升级）。
+- ⚠️ **一处必须说清的历史误会**：这份文档原来记的那份 keystore
+  （`D:\keys\elychron-release.jks`，SHA-256 `b2cc4256…a771c8`）属于**上一代维护者**，
+  与本项目无关 —— 本项目从没拿到过它，也从没用它签过任何包。**不要拿它来校验 Neochron 的 APK。**
 
 ### P0-3 换成自己的图标与 logo
 
@@ -109,32 +113,43 @@
 
 ## 四、签名步骤（只有仓库主本人能做）
 
-### 0. 记录：证书指纹（**已生成，2026-09-13**）
+### 0. 记录：本项目的证书指纹（**2026-09-25 生成**）
 
 ```text
-DN       : CN=Elychron, O=Elychron, C=CN
-SHA-256  : b2cc42560a1378b9087c7660ff9904c1cef5cb89a12f5eba68faa98a93a771c8
-SHA-1    : ba4ee7956f02c57f419d3ef20836f70c9c66ba42
-keystore : D:\keys\elychron-release.jks（仓库之外，PKCS12，别名 elychron，有效期 10000 天）
+DN       : CN=Neochron, O=Neochron, C=CN
+SHA-256  : 1ecde30744d28360749269a24b3e87719fcde710ab5f283d12db9dbdf5deb31c
+SHA-1    : 54371780aa2ccb59f78af31390cd6f74bfc2470e
+keystore : D:\keys\neochron-release.jks（仓库之外，PKCS12，别名 neochron，有效期 10000 天）
+签名方案 : APK Signature Scheme v2（minSdk 28，不需要 v1）
 ```
 
 - 以后每次发版都用 `apksigner verify --print-certs` 核对 **SHA-256 是否仍是这一串** ——
   对不上就说明用错 keystore 了（那会导致老用户无法覆盖安装）。
-- keystore 与密码**各备份两处**：丢了 = 所有用户只能卸载重装（待办数据丢失）。
+- **keystore 与密码各备份两处**（密码管理器 + 移动硬盘这类）：丢了 = 所有用户只能卸载重装
+  （待办与日程数据丢失）。这是整个项目里唯一"丢了就永久麻烦"的东西。
+- `android/key.properties` 里存的是**明文密码**（Android 的标准机制），它已被
+  `android/.gitignore` 忽略 —— **不要**把它放进任何要分享的压缩包，也别提交。
 - 生成脚本：`tools/setup_signing.ps1`（keystore + `android/key.properties` 一步到位；
   带 `-DryRun` 只预览，支持 `-StorePass` 非交互，且 **stdin 被重定向时会直接报错而不是等输入**）。
+  ⚠️ 该脚本必须保存为 **UTF-8 带 BOM**：Windows PowerShell 5.1 读无 BOM 的 UTF-8 会按 GBK
+  解码，中文变乱码并报出一屏语法错误（2026-09-25 实测踩到，见脚本头部注释）。
+
+> **上一代那份密钥（`D:\keys\elychron-release.jks`，SHA-256 `b2cc4256…a771c8`）不属于本项目**，
+> 是别人（Elychron 的维护者）的。本项目从来没拿到过它，也没用它签过包；
+> 文档里保留这段只是为了说明"为什么以前写着一串对不上的指纹"。
 
 ### 1. 生成 keystore（已完成，保留原始命令备查）
 
 ```powershell
 # 选一个不在仓库里的目录存放（例如 D:\keys\），密码自己想好
 keytool -genkeypair -v `
-  -keystore D:\keys\elychron-release.jks `
-  -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 `
-  -alias elychron
+  -keystore D:\keys\neochron-release.jks `
+  -storetype PKCS12 -keyalg RSA -keysize 2048 -validity 10000 `
+  -alias neochron `
+  -dname "CN=Neochron, O=Neochron, C=CN"
 ```
 
-> ⚠️ **证书里的身份信息（DN）要中性**：`CN` / `O` 一律填 `Elychron`（或直接回车跳过），
+> ⚠️ **证书里的身份信息（DN）要中性**：`CN` / `O` 一律填 `Neochron`，
 > **不要填真实姓名、学校邮箱或任何与本人相关的信息**。这个 DN 会写进 APK 的签名证书，
 > 任何人用 `apksigner verify --print-certs` 或 `keytool -printcert` 都能看到 —— 它是公开信息。
 
@@ -143,8 +158,8 @@ keytool -genkeypair -v `
 ```properties
 storePassword=你的store密码
 keyPassword=你的key密码
-keyAlias=elychron
-storeFile=D:/keys/elychron-release.jks
+keyAlias=neochron
+storeFile=D:/keys/neochron-release.jks
 ```
 
 ### 3. `android/app/build.gradle` 里接上
@@ -180,13 +195,26 @@ android {
 ### 4. 验证签名
 
 ```powershell
-# 应该看到 CN=... 而不是 Android Debug
+# 应该看到 CN=Neochron, O=Neochron, C=CN —— 而不是 CN=Android Debug
 & "C:\Android\Sdk\build-tools\36.0.0\apksigner.bat" verify --print-certs `
   build\app\outputs\flutter-apk\app-release.apk
 ```
 
 > ⚠️ **keystore + 密码必须备份两处**（比如私有网盘 + 移动硬盘）。
 > 丢了 = 老用户永远无法覆盖升级，只能卸载重装（数据丢失）。
+
+### 5. 从"debug 签名"切到"正式签名"的那一次（**只需做一次**）
+
+换签名后，手机上原来那个（debug 签名的）安装**不能覆盖升级** ——
+`adb install -r` 会被系统拒绝，报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`。步骤：
+
+1. 手机上先**导出数据**（设置 → 数据 → 导出 JSON），把文件存到手机或发给自己；
+2. `adb uninstall xyz.nosig.celechron.mod`（这一步会清掉应用数据）；
+3. 装新包：`adb install build\app\outputs\flutter-apk\app-release.apk`；
+4. 打开应用**重新登录**（账号密码存在系统密钥库里，卸载时一起没了），
+   再**导入**刚才那份 JSON。
+
+做完这一次之后，只要 keystore 与密码在，以后都能直接 `-r` 覆盖升级。
 
 ---
 
