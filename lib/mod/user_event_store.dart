@@ -3,6 +3,8 @@ import 'package:celechron/mod/user_event.dart';
 import 'package:celechron/mod/user_event_merge.dart';
 import 'package:celechron/mod/user_event_tombstone.dart';
 import 'package:celechron/mod/lan_sync_client.dart';
+import 'package:celechron/page/calendar/calendar_controller.dart';
+import 'package:get/get.dart';
 
 /// ============ 自定义日程的读写入口 ============
 ///
@@ -99,6 +101,44 @@ extension UserEventStore on DatabaseHelper {
         .put(uid, UserEventTombstone(uid: uid, deletedAt: at).toMap());
     await userEventBox.delete(uid);
     LanSyncClient.instance.scheduleSync();
+  }
+
+  /// 用一份结果**整体替换**本地日程（导入 / 同步合并之后用它落库）。
+  ///
+  /// 与逐个 [saveUserEvent] 的区别有两个，都是刻意的：
+  /// 1. **不动墓碑**：合并时墓碑已经由 [adoptUserEventTombstones] 收好了，
+  ///    这里再清一遍会把"对方删过"这件事抹掉，删掉的日程下次同步又回来；
+  /// 2. **不走每次操作就推一次同步**那条路（[LanSyncClient.scheduleSync]）：
+  ///    一次导入动辄几十条，逐条推会把局域网打爆。同步由调用方在收尾时统一触发。
+  Future<void> replaceUserEvents(Iterable<UserEvent> events) async {
+    final keep = <String>{};
+    for (final event in events) {
+      if (event.uid.isEmpty) continue;
+      keep.add(event.uid);
+      await userEventBox.put(event.uid, event.toMap());
+    }
+    // 本地有、结果里没有的：确实该删（墓碑已经单独维护），从盒子里清掉
+    final stale = userEventBox.keys
+        .map((key) => key.toString())
+        .where((uid) => !keep.contains(uid))
+        .toList();
+    for (final uid in stale) {
+      await userEventBox.delete(uid);
+    }
+    refreshUserEventViews();
+  }
+
+  /// 让已经在看日程页的那位立刻看到变化。
+  ///
+  /// 导入 / 同步进来的日程不该等用户切页才出现。控制器没建（没打开过日程页）
+  /// 就什么都不做 —— 它下次 onInit 会自己读一遍。
+  void refreshUserEventViews() {
+    try {
+      final controller = Get.find<CalendarController>();
+      controller.loadUserEvents();
+    } catch (_) {
+      // 没注册过就跳过
+    }
   }
 
   /// 收下对方那份墓碑（并集，同 uid 取更早的删除时刻）。

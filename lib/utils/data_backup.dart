@@ -6,6 +6,10 @@ import 'package:celechron/model/option.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/mod/course_mount_tombstone.dart';
 import 'package:celechron/mod/focus_device.dart';
+import 'package:celechron/mod/user_event.dart';
+import 'package:celechron/mod/user_event_merge.dart';
+import 'package:celechron/mod/user_event_store.dart';
+import 'package:celechron/mod/user_event_tombstone.dart';
 import 'package:celechron/utils/data_sync.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -60,6 +64,16 @@ class DataBackup {
           .toList(),
       secrets:
           includeSecrets ? await db.getSyncSecrets() : const <String, String>{},
+      // ===== 自定义日程（SPEC.md 步 6）=====
+      // 不带它的话，在电脑上排好的例会换到手机上就没了
+      userEvents: db.userEventBox.values
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
+      userEventTombstones: UserEventTombstone.toWire(
+        db.deletedUserEventUids().entries.map((entry) =>
+            UserEventTombstone(uid: entry.key, deletedAt: entry.value)),
+      ),
     );
   }
 
@@ -162,6 +176,35 @@ class DataBackup {
         });
       }
     }
+
+    // ===== 自定义日程（SPEC.md 步 6）=====
+    //
+    // 口径与待办一致（见 `mod/user_event_merge.dart`）：
+    // 同 uid 比 updatedAt、墓碑优先、删完之后又编辑过的会复活、合并幂等。
+    //
+    // 注意墓碑要用**两边合起来**的：本机删过的 + 对方删过的都算删除，
+    // 否则"在一端删掉"这种最普通的操作会被另一端原样带回来
+    // （课程挂载当初就漏了这一步，后来才补）。
+    final localEventTombstones = db.deletedUserEventUids();
+    final incomingEventTombstones =
+        UserEventTombstone.fromWire(bundle.userEventTombstones);
+    await db.adoptUserEventTombstones(incomingEventTombstones);
+    final mergedEventTombstones = UserEventTombstone.merge(
+      localEventTombstones,
+      {
+        for (final item in incomingEventTombstones)
+          if (item.uid.isNotEmpty) item.uid: item.deletedAt,
+      },
+    );
+
+    final mergedUserEvents = UserEventMerge.merge(
+      local: db.userEvents(),
+      remote: bundle.userEvents
+          .map((item) => UserEvent.fromMap(item))
+          .whereType<UserEvent>(),
+      deletedUids: mergedEventTombstones,
+    );
+    await db.replaceUserEvents(mergedUserEvents);
 
     // 标签库：合并（保留本地顺序，追加远端新增的）
     final tags = db.getTagLibrary();

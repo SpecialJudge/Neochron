@@ -105,6 +105,22 @@ class DataBundle {
   /// 课程挂载已删除的键（资料/评论的墓碑，见 mod/course_mount_tombstone.dart）
   final List<String> courseMountDeleted;
 
+  /// ===== 自定义日程（学生组织例会那种，SPEC.md 步 6）=====
+  ///
+  /// 每项形如 `UserEvent.toMap()` 的形状（**只作为值塞进 Map**，
+  /// 不新增 Hive typeId）。它们存在 `DatabaseHelper.userEventBox`。
+  ///
+  /// 为什么必须进同步包：用户会在电脑上排例会、在手机上用。不带它的话
+  /// 换设备就丢干净了 —— 课程挂载当初就漏过一次（见上面那段注释）。
+  final List<Map<String, dynamic>> userEvents;
+
+  /// 自定义日程的删除墓碑（uid → 删除时刻毫秒）。
+  ///
+  /// 少了它，在一端删掉的例会被另一端原样带回来。
+  /// 用 `Map` 而不是 `List` 是为了带上删除时刻：「删完之后又编辑过的会复活」
+  /// 这条规则（见 `mod/user_event_merge.dart`）没有时刻就无从判断。
+  final Map<String, int> userEventTombstones;
+
   /// 白名单内的密钥（见 [SyncSecrets]）。**用户可关掉密钥同步**，关掉时这里是空的。
   final Map<String, String> secrets;
 
@@ -128,6 +144,8 @@ class DataBundle {
     this.courseIdMapping = const <Map<String, dynamic>>[],
     this.courseMounts = const <Map<String, dynamic>>[],
     this.courseMountDeleted = const <String>[],
+    this.userEvents = const <Map<String, dynamic>>[],
+    this.userEventTombstones = const <String, int>{},
     this.secrets = const <String, String>{},
   });
 
@@ -147,6 +165,9 @@ class DataBundle {
         'focusDeletedUids': focusDeletedUids,
         'courseMounts': courseMounts,
         'courseMountDeleted': courseMountDeleted,
+        // 老客户端读到这两个未知键会忽略（JSON 契约：只加字段）
+        'userEvents': userEvents,
+        'userEventTombstones': userEventTombstones,
         'secrets': SyncSecrets.filter(secrets),
         'settings': {
           'reminderMode': reminderMode,
@@ -212,6 +233,24 @@ class DataBundle {
       for (final item in rawMounts) {
         if (item is Map) courseMounts.add(Map<String, dynamic>.from(item));
       }
+    }
+
+    // 自定义日程（老备份没有这两段 → 空表 ✓）
+    final userEvents = <Map<String, dynamic>>[];
+    final rawUserEvents = json['userEvents'];
+    if (rawUserEvents is List) {
+      for (final item in rawUserEvents) {
+        if (item is Map) userEvents.add(Map<String, dynamic>.from(item));
+      }
+    }
+
+    final userEventTombstones = <String, int>{};
+    final rawUserEventTombstones = json['userEventTombstones'];
+    if (rawUserEventTombstones is Map) {
+      rawUserEventTombstones.forEach((key, value) {
+        final millis = value is int ? value : (value is num ? value.toInt() : null);
+        if (millis != null) userEventTombstones[key.toString()] = millis;
+      });
     }
 
     final tags = <String>[];
@@ -297,6 +336,8 @@ class DataBundle {
       courseIdMapping: courseIdMapping,
       courseMounts: courseMounts,
       courseMountDeleted: courseMountDeleted,
+      userEvents: userEvents,
+      userEventTombstones: userEventTombstones,
       secrets: SyncSecrets.filter(secrets),
     );
   }
