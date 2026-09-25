@@ -230,9 +230,9 @@
 - **#2 AI 联网**（给 AI 网络工具自动探索网页生成待办，来自 GitHub issue #2）：用户明确说**不做**
 - **桌面小组件「最近待办」（PR #4）**：代码在树里，但**入口已经关掉**
   （清单里不再注册接收器，桌面小组件列表里不会出现它）—— 它刷新依赖系统后台调度，
-  在电池优化限制下会「点了没反应」，原因见 11.9 与 `docs/BACKLOG.md` #28，等有解再解封
+  在电池优化限制下会「点了没反应」，原因见 11.9 与 `docs/BACKLOG-DEPRECATED.md` #28，等有解再解封
 - 局域网同步：入口仍是关闭状态（`kLanSyncEnabled = false`）
-- WebDAV / Windows 客户端 / 附件同步：见 `docs/BACKLOG.md`，均未动
+- WebDAV / Windows 客户端 / 附件同步：见 `docs/BACKLOG-DEPRECATED.md`，均未动
 
 ## 七、外部反馈状态
 
@@ -825,7 +825,7 @@ App 在前台时任务能立刻跑，所以现象就是"**进 App 就正常、�
   `dumpsys package | grep -c TodoWidgetReceiver` = 0 ✓，桌面上的实例随之消失 ✓）；
 - Dart 侧加了 `TodoWidgetMessenger.enabled = false` 开关，`update/pendingCompletionIds/
   acknowledgeCompletions` 全部直接返回，不再做无用功；
-- **代码与资源全部保留在树里**，复活步骤写在 manifest 的注释和 `BACKLOG.md` #28 里；
+- **代码与资源全部保留在树里**，复活步骤写在 manifest 的注释和 `BACKLOG-DEPRECATED.md` #28 里；
 - 两个 PR 的回复里也向作者如实说明了这件事（PR #4）。
 
 ## 11.11 ★ 「更新后半坏登录态」的成因与修复（已修，含成因）
@@ -889,7 +889,7 @@ if (restoredScholar.isLogan && credentialsMissing) {
 ## 11.12 课程挂载（资料 / 评论 / 待办）—— 数据层已完成
 
 用户要求「课程允许挂载图片、评论以及待办」，并以为脚手架已搭好。
-**实际情况：此前只有设计（`BACKLOG.md` #24），一行代码都没有**，本轮从零开始。
+**实际情况：此前只有设计（`BACKLOG-DEPRECATED.md` #24），一行代码都没有**，本轮从零开始。
 
 按用户当初拍板的三条决定实施（评论/资料挂"课程总体"、走折中路径、待办也可挂上来）：
 
@@ -1259,7 +1259,7 @@ GetX 4.7.3 `get_rx/.../rx_interface.dart` 的 `notifyChildren`：
 
 ## 14.2 手把手引导（在真实页面上高亮按钮 + 气泡）：**工程量偏大，按用户拍板挪到 v1.4.2**
 
-评估写在 `docs/BACKLOG.md` 的「v1.4.2 计划」里，这里记结论：
+评估写在 `docs/BACKLOG-DEPRECATED.md` 的「v1.4.2 计划」里（该清单已于 2026-09-25 归档，只读），这里记结论：
 
 - 要点：目标控件定位（`GlobalKey` + `RenderBox.localToGlobal`，还要处理"还没构建出来"）、
   位置**实时跟随**（滚动/旋转/键盘/刷新）、遮罩**挖洞**（`Path.combine` + 深色模式 + 安全区）、
@@ -1272,7 +1272,7 @@ GetX 4.7.3 `get_rx/.../rx_interface.dart` 的 `notifyChildren`：
 
 ## 14.3 v1.4.2 计划已建（用户要求"其他没做的也堆到 v1.4.2"）
 
-`docs/BACKLOG.md` 顶部新增 **「★ v1.4.2 计划」**，分三档收口：
+`docs/BACKLOG-DEPRECATED.md` 顶部有 **「★ v1.4.2 计划」**（该清单已于 2026-09-25 归档，只读），分三档收口：
 
 - **A. 只等条件成熟的**：手把手引导、海宁校区课表节次（等数据）、
   "有成绩时点没排进课表的课"（缺真数据）、AI 子待办 5→7 的端到端验证、

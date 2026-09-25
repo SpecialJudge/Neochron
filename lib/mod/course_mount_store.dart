@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 
 /// 课程挂载（资料 / 评论 / 关联待办）的读写入口。
 ///
-/// 设计背景与三条拍板决定见 `docs/BACKLOG.md` #24 和 `CourseMount` 的注释。
+/// 设计背景与三条拍板决定见 `docs/BACKLOG-DEPRECATED.md` #24 和 `CourseMount` 的注释。
 /// 这里只管"存哪里、怎么取"，不管界面。
 extension CourseMountStore on DatabaseHelper {
   /// 取一门课挂载的东西；没有就返回空对象（**永远不返回 null**，

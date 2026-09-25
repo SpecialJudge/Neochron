@@ -77,7 +77,7 @@
              查到最后是**系统把 App 限制在电池优化里 → Glance 的会话任务（WorkManager）
              在后台不被调度** → 数据更新了、画面永不重画。加白名单后能好，
              但那要求每个用户手动去系统里允许后台运行，代价太大、体验不可控。
-             详见 docs/WHATS_NEW_1.4.1.md 11.9 与 docs/BACKLOG.md #28。
+             详见 docs/WHATS_NEW_1.4.1.md 11.9 与 docs/BACKLOG-DEPRECATED.md #28。
 
              要复活：把下面这段 receiver 放回来（内容见 git 历史），
              并让 TodoWidgetMessenger.enabled 恢复 true。

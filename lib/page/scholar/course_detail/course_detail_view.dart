@@ -509,7 +509,7 @@ class CourseDetailPage extends StatelessWidget {
           // 三个区块各自管自己的状态（见 course_mount_sections.dart），
           // 所以这个页面仍然是 StatelessWidget，改动面最小。
           // 口径：评论与资料挂"课程总体"（键 = 课程代码）；待办走 Task.courseId，
-          // 关系只存一处、不冗余。拍板决定见 docs/BACKLOG.md #24。
+          // 关系只存一处、不冗余。拍板决定见 docs/BACKLOG-DEPRECATED.md #24。
           SliverToBoxAdapter(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
