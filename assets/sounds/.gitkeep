@@ -1,0 +1,17 @@
+# 本文件只有一个作用：让 assets/sounds/ 这个目录在 git 里存在。
+#
+# 为什么需要它：
+#   pubspec.yaml 第 88 行声明了 `- assets/sounds/`（整个目录一起进包）。
+#   目录不存在时 Flutter 会报
+#     Error: unable to find directory entry in pubspec.yaml: <...>/assets/sounds/
+#   并在 pub get / build / test 阶段拒绝继续。原先这个目录从没被提交过，
+#   所以每个新克隆都会撞上它（2026-09-25 实测：flutter test 首行就是这个 Error）。
+#
+# 目录里应该放什么：
+#   可选的桌面端提醒音。见 lib/platform/desktop_notify.dart 与 pubspec.yaml 的注释：
+#     优先找 ely_hi.mp3 / ely_hi.m4a / ely_hi.wav / voice.mp3 / voice.wav
+#     都没有就退回程序内置的系统提示音
+#   把音频丢进来、重新构建即可生效，不用改代码。
+#
+# 注意：爱莉原声受版权保护，只放本地，绝不提交。
+#       .gitignore 第 906-907 行已经忽略了 assets/sounds/ely_hi.* 与 assets/sounds/voice.*
