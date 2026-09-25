@@ -75,7 +75,7 @@ void main(List<String> args) async {
   //      ⇒ `RxInterface.proxy` 被**永久留在一个已经构建失败的 Obx 上**；
   //   ③ 此后全 App 任何一次 Rx 读取都会挂到这个"死观察者"上 → 反复触发它 setState
   //      → 它每次重建都再抛一次 → **主线程 100% CPU 空转**；
-  //   ④ 5 秒后系统判Elychron 无响应，弹 ANR 对话框， 用户看到的就是"卡死"。
+  //   ④ 5 秒后系统判Neochron 无响应，弹 ANR 对话框， 用户看到的就是"卡死"。
   //      （真机 ANR 报告佐证：主线程 state=R、utm=23.5s、全程跑在 libapp.so 里，不是死锁。）
   //
   // 我们改不了 GetX，但 `RxInterface.proxy` 是**公开静态字段**， 在"构建已经出错"的
@@ -137,7 +137,7 @@ void main(List<String> args) async {
       restoredUsername.isEmpty || restoredPassword.isEmpty;
   if (restoredScholar.isLogan && credentialsMissing) {
     debugPrint(
-        '[Elychron] 恢复的登录状态缺少凭据（学号=${restoredUsername.isEmpty ? "空" : "有"}、'
+        '[Neochron] 恢复的登录状态缺少凭据（学号=${restoredUsername.isEmpty ? "空" : "有"}、'
         '密码=${restoredPassword.isEmpty ? "空" : "有"}）');
     // ===== MOD: 先尝试**自动重登**（用户 2026-09-21 要求）=====
     // 覆盖安装后密钥库读不出来是常见事，让用户无感恢复；
@@ -150,7 +150,7 @@ void main(List<String> args) async {
       username: remembered.username,
       password: remembered.password,
     )) {
-      debugPrint('[Elychron] 尝试自动重登…');
+      debugPrint('[Neochron] 尝试自动重登…');
       try {
         restoredScholar.username = remembered.username;
         restoredScholar.password = remembered.password;
@@ -158,18 +158,18 @@ void main(List<String> args) async {
         if (LoginCriteria.succeeded(result)) {
           await db.setUserLoggedOut(false);
           await db.rememberAccount(remembered.username, remembered.password);
-          debugPrint('[Elychron] 自动重登成功');
+          debugPrint('[Neochron] 自动重登成功');
         } else {
           restoredScholar.isLogan = false;
           restoredScholar.sessionInvalid = true;
         }
       } catch (error) {
-        debugPrint('[Elychron] 自动重登失败：$error');
+        debugPrint('[Neochron] 自动重登失败：$error');
         restoredScholar.isLogan = false;
         restoredScholar.sessionInvalid = true;
       }
     } else {
-      debugPrint('[Elychron] 不自动重登（主动退登过=$loggedOutByChoice）→ 按需要重新登录处理');
+      debugPrint('[Neochron] 不自动重登（主动退登过=$loggedOutByChoice）→ 按需要重新登录处理');
       restoredScholar.isLogan = false;
       restoredScholar.sessionInvalid = true;
     }
@@ -591,12 +591,12 @@ class _CelechronAppState extends State<CelechronApp>
           // （用户："电脑上不需要什么丝滑的动画，点击就切换"）
           defaultTransition:
               PlatformFeatures.isDesktop ? Transition.noTransition : null,
-          title: 'Elychron',
+          title: 'Neochron',
           // ===== v1.5.0：桌面端换一套壳（左侧竖导航 + 中间功能页）=====
           // 里面装的页面与手机端完全一样，只是一行业务逻辑都没有重写。
           home: PlatformFeatures.isDesktop
               ? const DesktopHome()
-              : const HomePage(title: 'Elychron'),
+              : const HomePage(title: 'Neochron'),
           initialRoute: '/',
           routes: {
             '/ecardpaypage': (context) => ECardPayPage(),
