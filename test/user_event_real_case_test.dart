@@ -100,14 +100,10 @@ void main() {
 
     test('学期名对得上（对不上就会被学期过滤掉，一条都不画）', () async {
       final semester = await realSemester();
-      // `userEventSpansForWeekday` 的过滤口径：null 或者相等
-      final event = realEvent();
-      expect(
-        event.semesterName == null ||
-            semester.name == null ||
-            event.semesterName == semester.name,
-        isTrue,
-      );
+      expect(semester.name, '2026-2027秋冬');
+      // 与 `userEventSpansForWeekday` 的过滤口径一致：没写学期（null）算"不限学期"，
+      // 写了就必须与本学期的名字相等。`Semester.name` 是非空的，所以只判前者。
+      expect(realEvent().semesterName ?? semester.name, semester.name);
     });
   });
 }
