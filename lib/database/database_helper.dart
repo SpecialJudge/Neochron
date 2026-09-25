@@ -333,6 +333,22 @@ class DatabaseHelper {
   /// 不新增 typeId、不注册 adapter， 与 `CourseIdMap` 同一套做法。
   late final Box courseMountBox;
 
+  /// ===== MOD: 自定义日程（学生组织例会那种，见 `lib/mod/user_event.dart`）=====
+  ///
+  /// 键 = uid，值 = `UserEvent.toMap()`。与 `courseMountBox` **完全同一套做法**：
+  /// 独立 box + 值存一份 Map/JSON，**不新增 Hive typeId、不注册 adapter**。
+  /// 好处是零 schema 风险、零迁移脚本，以后给 `UserEvent` 加字段不用动 Hive 编号。
+  ///
+  /// ⚠️ 它**不放进 `scholarBox`**：那个盒子装的是教务返回的数据，
+  /// 每次刷新都会被重建/合并，用户自己的日程混进去迟早被冲掉。
+  late final Box userEventBox;
+
+  /// 自定义日程的删除墓碑：键 = uid，值 = `UserEventTombstone.toMap()`。
+  ///
+  /// 与待办（`dbTombstones`）、课程挂载一样，用来阻止"在一端删掉、
+  /// 被另一端同步带回来"。口径见 `lib/mod/user_event_tombstone.dart`。
+  late final Box userEventTombstoneBox;
+
   late final FlutterSecureStorage secureStorage;
 
   Future<void> init() async {
@@ -382,6 +398,9 @@ class DatabaseHelper {
     _bootProbe('[boot] 3 focusBox');
     accountBox = await openBoxResilient(dbAccount, hiveDirectory);
     courseMountBox = await openBoxResilient(dbCourseMount, hiveDirectory);
+    userEventBox = await openBoxResilient(dbUserEvent, hiveDirectory);
+    userEventTombstoneBox =
+        await openBoxResilient(dbUserEventTombstone, hiveDirectory);
     _bootProbe('[boot] 4 新盒子');
     secureStorage = const FlutterSecureStorage();
     _bootProbe('[boot] 5 密钥库对象建好');
@@ -430,6 +449,12 @@ class DatabaseHelper {
 
   /// 课程挂载（资料 / 评论），键 = 课程代码
   final String dbCourseMount = 'dbCourseMount';
+
+  /// 自定义日程（键 = uid）。见 [userEventBox] 的注释
+  final String dbUserEvent = 'dbUserEvent';
+
+  /// 自定义日程的删除墓碑（键 = uid）。见 [userEventTombstoneBox] 的注释
+  final String dbUserEventTombstone = 'dbUserEventTombstone';
 
   /// 专注参数：工作 / 休息分钟数 + 休息时是否提醒（用户拍板默认 60 / 15）
   final String kFocusWorkMinutes = 'focusWorkMinutes';
