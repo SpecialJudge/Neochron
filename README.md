@@ -1,17 +1,24 @@
-# Elychron —— Celechron 的非官方改版
+# Neochron —— Celechron 的非官方改版（第三代）
+
+> ⚠️ **本 README 还没改完**：项目名与出处已经改成 Neochron，但文中凡是**指向具体仓库地址**
+> 的链接（下载、Issues、更新检查、隐私说明里的 GitHub API）**目前仍指向上一代仓库**，
+> 等本仓库自己的地址确定后统一替换。待办清单见 `docs/BACKLOG.md` 的 **I12**。
 
 > **这是 Celechron 的非官方修改版（fork），不是官方发布。**
 >
-> - 上游项目：[Celechron/Celechron](https://github.com/Celechron/Celechron)（面向浙大学生的时间管理器）
+> - 项目渊源：**Celechron**（官方，面向浙大学生的时间管理器）
+>   → **Elychron**（[Elyyyyyyyyxer/Elychron](https://github.com/Elyyyyyyyyxer/Elychron)，由 **Tixer** 维护）
+>   → **Neochron**（本项目）
+> - 上游项目：[Celechron/Celechron](https://github.com/Celechron/Celechron)
 > - 原项目版权归 **nosig** 及 Celechron 全体贡献者所有，遵循 **GPLv3**
-> - 本改版由 **Tixer** 维护 ｜ 本仓库：[Elyyyyyyyyxer/Elychron](https://github.com/Elyyyyyyyyxer/Elychron)
-> - 基于上游版本：**v1.3.0**（commit `ceab2a4`）
+> - Neochron 基于上游 **Celechron v1.3.0**（commit `ceab2a4`）；上一代 **Elychron** 的改动一并继承，
+>   **那些改动的功劳属于其原作者**，本仓库只是在它们的基础上继续做
 > - 许可协议：**GPLv3**（继承上游，见 [LICENSE](LICENSE)）。本仓库即为对应源码，
 >   只要分发本程序的二进制，你就有权获得这份源码。
 > - 独立 `applicationId`（`xyz.nosig.celechron.mod`），**可与官方版共存**，装它不会覆盖官方版
 >
-> Elychron 不是 Celechron 官方版本，与官方项目无关。遇到问题请提到本仓库 Issues，
-> **不要去打扰上游作者**。
+> Neochron 不是 Celechron 官方版本，与官方项目无关。遇到问题请提到**本仓库** Issues，
+> **不要去打扰上游作者**（也不要打扰上一代作者）。
 
 ## 下载与安装
 
@@ -20,8 +27,10 @@
 - 只提供 **arm64** 包（近年的校园机型都支持）
 - 与官方 Celechron **包名不同，可以共存**，装它不会覆盖官方版，两边数据互不影响
 - 首次安装需要在系统里允许「安装未知来源应用」
-- **校验**：每个版本的 APK SHA-256 与签名证书指纹都写在对应 Release 说明里；
-  签名指纹应当是 `b2cc42560a1378b9087c7660ff9904c1cef5cb89a12f5eba68faa98a93a771c8`
+- **校验**：每个版本的 APK SHA-256 与签名证书指纹写在对应 Release 说明里。
+  签名指纹**待本项目生成自己的正式密钥后补上** —— 上一代那份
+  （`b2cc4256…a771c8`）属于**上一代维护者的密钥**，Neochron 不使用它，
+  也不该拿别人的指纹来校验自己的包。生成后新指纹会记进 `docs/RELEASE.md`。
 
 ## 一、为什么会有这个改版
 
