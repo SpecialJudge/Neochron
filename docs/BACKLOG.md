@@ -264,6 +264,7 @@
 
 | 事项 | 结论 | 证据 |
 | --- | --- | --- |
+| **应用改名：Elychron → Neochron**（2026-09-25，分支 `feat/rename-neochron`） | ✅ 完成。提交 `2dcd222`（测试小修）+ `cd75b35`（应用名 5 个文件）+ `ff5bd95`（界面文案 35 个文件）。验证：analyze 176（0 error / 21 warning，与改名前的基线一致）、全量 `flutter test` **+876 全过**、`aapt2 dump badging` 读出 `application-label:'Neochron'`（包名 `xyz.nosig.celechron.mod` 与 versionName 未变，签名仍是 `6db37524…`）。<br>**刻意不动的**（都不是漏）：`applicationId`/`namespace`/manifest `package`、Dart 包名 `celechron`、`accountName: 'Celechron'`（iOS 钥匙串里存着登录凭据）、`<data android:scheme="celechron"/>`（对外深链接）、Hive box 名与 `DataBundle.format='celechron-mod'`、导出前缀 `celechron-backup-*`、`fuse.dart` 的 `releaseRepo` 与校历上游地址、LICENSE/版权头、`CelechronLogLevel` 等内部类名。<br>系统日历名改成 `Neochron课表`，并把旧名 `Elychron课表` 加进 `legacyCalendarNames`（旧日历会被清理）。<br>**还没决定**：仓库自己的 `README.md` / `PRIVACY.md` 仍写 Elychron（那是项目说明与真实仓库地址，不算应用名）、GitHub 仓库名要不要一起改、`celechron://` 要不要再加一个 `neochron://`、`windows/linux/macos/ios` 四个模板工程里的名字（P2） | `git log --oneline feat/rename-neochron` |
 | 环境搭建（Flutter / JDK / Android SDK / 开发者模式） | ✅ 全部就位，见 `tools/setup_env.md` 第六之二节 | Flutter 3.47.2 + Dart 3.13.2、JDK 21.0.12.1、build-tools 35/36、platforms 34/35/36 |
 | 构建基线 | ✅ `flutter build apk --release` 成功 | `app-release.apk` 29,163,614 字节 |
 | 静态检查基线 | ✅ **0 error**（22 warning + 155 info） | `dart analyze --no-fatal-warnings` |
