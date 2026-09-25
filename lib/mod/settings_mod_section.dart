@@ -270,8 +270,10 @@ Widget modDataSection(
                 padding: const EdgeInsets.only(left: 16),
                 child: Text('数据', style: headerStyle)),
             children: <CupertinoListTile>[
-          // 局域网同步（多端协同）尚未完工，公开发布这版先不开放入口。
-          // 代码与网页面板都还在 `lib/mod/lan_*.dart` 里，改回 true 即可恢复。
+          // 局域网同步（多端协同）：入口**现在是开着的**（`kLanSyncEnabled = true`）。
+          // 代码与网页面板在 `lib/mod/lan_*.dart`；想在某个版本里临时藏掉入口，
+          // 把这个值改成 false 即可（上一版注释写着"尚未完工、先不开放"，
+          // 但值早已改成 true、注释没跟着改 —— 2026-09-25 按实际值统一，见 README/PRIVACY）。
           if (kLanSyncEnabled) ...[
             CupertinoListTile(
               title: const Text('局域网同步'),
