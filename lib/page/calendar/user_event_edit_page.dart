@@ -3,17 +3,41 @@ import 'package:celechron/design/date_picker_sheet.dart';
 import 'package:celechron/design/page_background.dart';
 import 'package:celechron/design/repeat_sheet.dart';
 import 'package:celechron/design/user_event_palette.dart';
+import 'package:celechron/mod/user_event.dart';
 import 'package:celechron/mod/user_event_clock.dart';
 import 'package:celechron/mod/user_event_draft.dart';
 import 'package:celechron/model/task.dart' show TaskRepeatType;
 import 'package:flutter/cupertino.dart';
+
+/// 编辑页退出时告诉调用方"发生了什么"。
+///
+/// 为什么不直接 `pop(UserEvent?)`：还要能表达**删除**这一种结果。
+/// 用哨兵值（比如返回 null 当删除）会取消与删除分不清，
+/// 所以给一个小结构体，`switch` 一眼看明白。
+enum UserEventEditAction { saved, deleted }
+
+class UserEventEditResult {
+  final UserEventEditAction action;
+
+  /// 保存时是那条日程；删除时为 null
+  final UserEvent? event;
+
+  const UserEventEditResult.saved(this.event)
+      : action = UserEventEditAction.saved;
+
+  const UserEventEditResult.deleted()
+      : action = UserEventEditAction.deleted,
+        event = null;
+}
 
 /// 新建 / 编辑自定义日程的页面（SPEC.md 步 4）。
 ///
 /// 交互与配色照 `task_create_page.dart`（钉钉风）：标题大字号直接写在顶上，
 /// 其余是一行行的设置项；右上角保存、左上角关闭。
 ///
-/// **返回契约**：保存成功时 `pop(UserEvent)`；取消时 `pop(null)`。
+/// **返回契约**：保存成功时 `pop(UserEventEditResult.saved(event))`；
+/// 删除时（只有 [allowDelete] 为 true 才有那个按钮）`pop(…deleted())`；
+/// 取消时 `pop(null)`。
 /// 落库由调用方负责（它拿得到 `DatabaseHelper`），这个页面只管收集输入与校验。
 ///
 /// 校验全部交给 [UserEventDraft.validate]（纯逻辑、有单测），
@@ -26,10 +50,14 @@ class UserEventEditPage extends StatefulWidget {
   /// 新建时是「新建日程」，编辑时是「编辑日程」
   final String pageTitle;
 
+  /// 编辑既有日程时给 true：左上角会多一个删除入口
+  final bool allowDelete;
+
   const UserEventEditPage({
     super.key,
     required this.initial,
     this.pageTitle = '新建日程',
+    this.allowDelete = false,
   });
 
   @override
@@ -82,7 +110,34 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
       _alert('这条日程还存不了', detail: const ['请检查标题与时间']);
       return;
     }
-    Navigator.of(context).pop(event);
+    Navigator.of(context).pop(UserEventEditResult.saved(event));
+  }
+
+  /// 删除整条日程（SPEC.md D7：第一期只做整条删，不做"只删这一次"）
+  Future<void> _delete() async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: const Text('删除这条日程？'),
+        content: Text(
+          '「${_draft.title.trim().isEmpty ? "未命名" : _draft.title.trim()}」'
+          '会从日历、课表与「接下来」里一起消失。',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('取消'),
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            child: const Text('删除'),
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).pop(const UserEventEditResult.deleted());
   }
 
   void _alert(String message, {List<String>? detail}) {
@@ -438,16 +493,32 @@ class _UserEventEditPageState extends State<UserEventEditPage> {
         backgroundColor: CupertinoDynamicColor.resolve(
             CupertinoColors.systemGroupedBackground, context),
         leading: CupertinoButton(
+
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
           child: const Icon(CupertinoIcons.xmark),
         ),
         middle: Text(widget.pageTitle),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _canSave ? _save : null,
-          child: const Text('保存',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 编辑既有日程时才给删除入口（新建时没什么可删的）
+            if (widget.allowDelete) ...[
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _delete,
+                child: const Icon(CupertinoIcons.trash,
+                    semanticLabel: '删除'),
+              ),
+              const SizedBox(width: 14),
+            ],
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _canSave ? _save : null,
+              child: const Text('保存',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            ),
+          ],
         ),
         border: null,
       ),

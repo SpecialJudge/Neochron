@@ -1,5 +1,6 @@
 import 'package:celechron/http/calendar_bundled_config.dart';
 import 'package:celechron/http/calendar_config_parser.dart';
+import 'package:celechron/mod/user_event_timetable.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// 校历的两块**纯逻辑 + 资源**测试（2026-09-17 用户拍板后加的）。
@@ -40,6 +41,24 @@ void main() {
       final startEnd = (config['startEnd'] as List).cast<String>();
       expect(startEnd.first, '20260914');
       expect(startEnd[2], '20261109');
+    });
+
+    test('★ 课表行数与校历的节数一致（13 vs 15 那个坑的护栏）', () async {
+      // 背景：`schedule_view.dart` 原来写死 13 行，而校历有 15 节，
+      // 于是第 14、15 节（21:20 之后）的课程与自定义日程都画不出来；
+      // 我自己还凭印象编过一张节次表，推出了一条错误的行区间规则。
+      // 这条测试把"课表行数"钉在校历资源上：校历一变，它立刻红。
+      for (final semesterId in BundledCalendarConfig.bundledSemesters) {
+        final text = (await BundledCalendarConfig.load(semesterId))!;
+        final config = decodeAndValidateCalendarConfig(text,
+            context: '内置校历 $semesterId');
+        final sessionTime = config['sessionTime'] as List;
+        // 下标 0 是占位（["00:00","00:00"]），所以"节数" = 长度 - 1
+        expect(sessionTime.length - 1, TimetableRowLayout.rowCount,
+            reason: '$semesterId 有 ${sessionTime.length - 1} 节，'
+                '但课表只画 ${TimetableRowLayout.rowCount} 行 —— '
+                '请同步改 ScheduleView._rowCount 与 TimeTableRowLayout.rowCount');
+      }
     });
 
     test('中文没乱码（曾经用错编码下载过一次，这里是护栏）', () async {

@@ -7,6 +7,7 @@ import 'package:celechron/design/task_priority_color.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/mod/calendar_paging.dart';
 import 'package:celechron/mod/user_event.dart';
+import 'package:celechron/mod/user_event_draft.dart';
 import 'package:celechron/mod/user_event_store.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:celechron/model/task.dart';
@@ -479,10 +480,11 @@ class CalendarPage extends StatelessWidget {
       semesterName: semester?.name,
       semesterLastDay: semester?.hasCalendar == true ? semester?.lastDay : null,
     );
-    final created = await showCupertinoModalPopup<UserEvent>(
+    final result = await showCupertinoModalPopup<UserEventEditResult>(
       context: context,
       builder: (BuildContext context) => UserEventEditPage(initial: draft),
     );
+    final created = result?.event;
     if (created == null) return;
     try {
       await Get.find<DatabaseHelper>(tag: 'db').saveUserEvent(created);
@@ -765,6 +767,48 @@ class CalendarPage extends StatelessWidget {
     return '截止 ${toStringHumanReadable(task.endTime)}${task.isOverdue ? ' - 已过期' : ''}';
   }
 
+  /// 这条日程对应的自定义日程；找不到返回 null（多半是刚被删掉）。
+  UserEvent? _userEventOfPeriod(Period period) {
+    if (period.type != PeriodType.user) return null;
+    for (final event in _calendarController.userEvents) {
+      if (event.uid == period.fromUid) return event;
+    }
+    return null;
+  }
+
+  /// 点日程卡片：打开编辑页，按用户的选择保存 / 删除（SPEC.md 步 4）。
+  ///
+  /// 修的是一个真实的缺口：这个函数原来只服务**待办**（从 `deadlineList` 里
+  /// 按 `fromUid` 找 Task），而自定义日程不在待办里 —— 于是点日程卡片
+  /// **什么都不会发生**，卡片上那个打钩圆圈也不显示（`_taskOfPeriod` 同样找不到）。
+  Future<void> _editUserEventCard(BuildContext context, UserEvent event) async {
+    final result = await showCupertinoModalPopup<UserEventEditResult>(
+      context: context,
+      builder: (BuildContext context) => UserEventEditPage(
+        initial: UserEventDraft.of(event),
+        pageTitle: '编辑日程',
+        allowDelete: true,
+      ),
+    );
+    if (result == null) return; // 用户取消
+
+    try {
+      final db = Get.find<DatabaseHelper>(tag: 'db');
+      switch (result.action) {
+        case UserEventEditAction.saved:
+          final updated = result.event;
+          if (updated != null) await db.saveUserEvent(updated);
+        case UserEventEditAction.deleted:
+          await db.deleteUserEvent(event.uid);
+      }
+    } catch (_) {
+      // 存不进去 / 删不掉就什么都别改：界面按原样显示（总比崩掉强）
+      return;
+    }
+    // 控制器会听到 userEvents 变化并重算日历（见 onInit 里的 ever）
+    _calendarController.loadUserEvents();
+  }
+
   Widget createCard(context, Period period) {
     return RoundRectangleCard(
       onTap:
@@ -775,6 +819,7 @@ class CalendarPage extends StatelessWidget {
                           CourseDetailPage(courseId: period.fromUid)))
               : (period.type == PeriodType.user
                   ? (() async {
+                      // 先按待办找（活动型待办的 Period 也是 PeriodType.user）
                       Task? deadline;
                       for (var x in deadlineList) {
                         if (x.uid == period.fromUid) {
@@ -783,7 +828,13 @@ class CalendarPage extends StatelessWidget {
                         }
                       }
                       if (deadline != null) {
-                        showCardDialog(context, deadline);
+                        await showCardDialog(context, deadline);
+                        return;
+                      }
+                      // 不是待办 → 那就是自定义日程（SPEC.md 步 4）
+                      final event = _userEventOfPeriod(period);
+                      if (event != null) {
+                        await _editUserEventCard(context, event);
                       }
                     })
                   : null),
@@ -793,6 +844,10 @@ class CalendarPage extends StatelessWidget {
           children: [
             if (period.type == PeriodType.user)
               () {
+                // 打钩圆圈只给**活动型待办**（它的 Period 也是 PeriodType.user）。
+                // 自定义日程不在待办里，`_taskOfPeriod` 必然返回 null
+                // → 这里什么都不画，这是对的：日程没有"完成"这个语义
+                // （SPEC.md D1 就是为此把日程做成独立实体的）。
                 final task = _taskOfPeriod(period);
                 if (task == null) return const SizedBox.shrink();
                 return _taskCheckbox(context, task);
