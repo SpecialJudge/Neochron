@@ -153,6 +153,10 @@ class CalendarController extends GetxController {
     try {
       final db = Get.find<DatabaseHelper>(tag: 'db');
       userEvents.value = db.userEvents();
+      // 顺手清一次过期墓碑（默认留 180 天）。放在这里而不是启动早期：
+      // 日程页建起来就说明数据库已经好了，而且这里本来就在碰日程相关的盒子。
+      // 幂等、代价很小；不清的话墓碑会随删除次数无限长下去。
+      unawaited(db.pruneUserEventTombstones());
     } catch (_) {
       userEvents.value = <UserEvent>[];
     }
@@ -190,8 +194,24 @@ class CalendarController extends GetxController {
   List<Period> userEventPeriodsOfDay(DateTime day) {
     final semester = getSemesterOf(day);
     if (semester == null) return const <Period>[];
-    return toPeriods(userEventCalendarFor(semester).spansOfDay(userEvents, day));
+    // 只铺**属于这个学期**的日程（外加没写学期的那种"不限学期"）。
+    // 少了这一步，下学期建的例会会出现在本学期这一天的列表里，
+    // 而且用的是本学期的节次时间 —— 更糟的是它没有对应的课表来对照。
+    return toPeriods(userEventCalendarFor(semester)
+        .spansOfDay(userEventsForSemester(semester.name), day));
   }
+
+  /// 本地那份快照里，属于 [semesterName] 的日程（外加没写学期的）。
+  ///
+  /// 为什么不用 `DatabaseHelper.userEventsOfSemester`：那是 `DatabaseHelper`
+  /// 上的扩展方法，控制器调不到；而且这里已经有一份 [userEvents] 快照在手，
+  /// 就地筛比再读一次盒子便宜。
+  List<UserEvent> userEventsForSemester(String? semesterName) => userEvents
+      .where((event) =>
+          event.semesterName == null ||
+          semesterName == null ||
+          event.semesterName == semesterName)
+      .toList();
 
   /// [from] 到 [to] 之间（含两端）的自定义日程时段。
   ///
@@ -207,6 +227,42 @@ class CalendarController extends GetxController {
     }
     return result;
   }
+
+  /// 课表那面要的：某个星期几在 [semester] 里的自定义日程时段。
+  ///
+  /// 课表是**规则表**（周一到周日 × 13 节），所以要的是"这个星期几那一天长什么样"，
+  /// 而不是"某个具体日期"。做法是拿该学期里**第一个**这个星期几的日期当代表
+  /// （例如本学期的第一个周一），再用与日历完全相同的口径铺一次。
+  ///
+  /// 为什么这样可以：本功能的口径是**自然周几 + 间隔周数**（SPEC.md D3），
+  /// 每 N 周才发生的那种在规则表上本来就画不出来 —— 课表只能表示"通常是哪几天"。
+  /// 具体哪一周有没有，请看日历那面（那里是按真实日期铺的）。
+  List<EventSpan> userEventSpansForWeekday(Semester semester, int weekday) {
+    final anchor = firstDateOfWeekday(semester, weekday);
+    if (anchor == null) return const <EventSpan>[];
+    // 同上：只铺属于这个学期的（+ 不限学期的）。传全量的话，
+    // 别的学期建的例会会出现在这张表上，位置还按本学期的节次算。
+    return userEventCalendarFor(semester)
+        .spansBetween(userEventsForSemester(semester.name), anchor, anchor);
+  }
+
+  /// 这个学期里第一个星期 [weekday] 的日期（例如本学期第一个周一）；没有则 null
+  DateTime? firstDateOfWeekday(Semester semester, int weekday) {
+    if (!semester.hasCalendar) return null;
+    final first = chopDate(semester.firstDay);
+    final last = chopDate(semester.lastDay);
+    // 从学期第一天往后找同一天最多 7 天就能碰到
+    for (var offset = 0; offset < 7; offset++) {
+      final candidate = DateTime(first.year, first.month, first.day + offset);
+      if (candidate.isAfter(last)) return null;
+      if (candidate.weekday == weekday) return candidate;
+    }
+    return null;
+  }
+
+  /// 这个时段与课程撞了吗（课表格子上的角标用它，SPEC.md D10）
+  bool userEventConflictsWithLecture(Semester semester, EventSpan span) =>
+      userEventCalendarFor(semester).conflictsWithLecture(span);
 
   /// [day] 落在哪个学期（按学期起止日判断）；没有就 null。
   ///
