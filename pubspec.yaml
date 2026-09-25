@@ -125,10 +125,14 @@ flutter:
 #   `Icon`（L242 与 L658 各一条，本意是忽略 macOS 那个名字带 \r 的卷图标文件），
 #   本机 core.ignorecase=true 会把它当成 `icon` 匹配掉整个目录 —— 母版静默不入库，
 #   而 pubspec 却指着它（2026-09-25 实测踩到，故改名 app-icon）。
-# 自适应图标走「满铺」：背景 = 母版，前景 = 全透明占位图 + inset 0。
-#   为什么不按默认的「前景缩小 16%」：实测这张美术的墨迹**内接于画布内切圆**，
-#   圆形与圆角方形遮罩裁掉的墨迹都是 0.0%，所以满铺不丢内容、只是把图案
-#   从约 70dp 放大到约 104dp，桌面图标看着更饱满。
+# 自适应图标：**白底 + 前景缩进 16%**（前景 = 母版本身，外面一圈由白底补上）。
+#   白底是为了跟美术自己的底色无缝衔接（#FFFFFF 占该图 95%）。
+#   ⚠️ 别再改回「满铺」（背景=母版、前景=透明占位、inset 0）：2026-09-25 试过一版，
+#   理由是实测该美术的墨迹内接于画布内切圆、圆形遮罩裁不到内容 —— 但那只对
+#   **恰好铺满 108dp 的标准圆形遮罩**成立。真机上不少启动器（华为/鸿蒙那类）
+#   画出来的形状只占图层约 82%，于是零安全边距的满铺直接吃掉了图案本体
+#   （该美术左右白边只有 1.8%/2.3%、墨迹宽占 96%，每边被切约 8.5%）。
+#   用户真机反馈「过于饱满、原图边缘看不到了」，故改回标准做法。
 # 传统图标（mipmap-*/ic_launcher.png）仍由 image_path 整图缩放生成。
 # ⚠️ 资源名必须保持 ic_launcher：通知小图标在 4 处代码里写死了 @mipmap/ic_launcher
 #   （main.dart / task_reminder.dart / option_controller.dart / background_app_refresh.dart）。
@@ -140,7 +144,7 @@ flutter_launcher_icons:
   image_path: tools/app-icon/app_icon.png
   android: true
   ios: false
-  adaptive_icon_background: tools/app-icon/app_icon.png
-  adaptive_icon_foreground: tools/app-icon/app_icon_foreground_transparent.png
-  adaptive_icon_foreground_inset: 0
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: tools/app-icon/app_icon.png
+  adaptive_icon_foreground_inset: 16
   remove_alpha_ios: true
