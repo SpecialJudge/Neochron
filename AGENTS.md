@@ -1,5 +1,9 @@
 # Neochron — Agent 工作说明
 
+> **接手开发前先读 [`docs/HANDOFF.md`](docs/HANDOFF.md)**：
+> 现状快照（包名/签名/仓库/测试基线）、代码地图、环境与工具的坑、
+> 验证手段、以及"绝对不能改"清单与理由。这份说明只保留硬约束。
+
 ## 项目身份
 - 基于 Celechron v1.3.0 (ceab2a4) → Elychron → Neochron 的三代衍生版
 - 许可：GPLv3，整个仓库。不得引入 NonCommercial/专有依赖。
