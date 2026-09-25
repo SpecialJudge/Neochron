@@ -79,6 +79,15 @@
 - **入口自检**（免得再出现"写了函数没人调"）：`+` → `newUserEvent` ✓、
   卡片 → `_editUserEventCard` ✓、`saveUserEvent` / `deleteUserEvent` /
   `replaceUserEvents` / `pruneUserEventTombstones` 各自都有调用点 ✓。
+- **已修的第四个真缺口（2026-09-25，真机反馈之外、静态复查发现）**：
+  **编辑页的颜色选择器压根不影响任何显示**。`UserEventPalette.resolve()`
+  在整个 lib/ 里没有调用者，`event.color` 只写进 Hive 和草稿 —— 用户导出里
+  能看到他选了 `0xFF66CCFF`（天依蓝），但月视图/当天列表走的是
+  `UidColors.colorFromUid()` 的散列色。现在月视图小圆点、当天列表色块、
+  「接下来」的配色都认这个颜色（课表**仍固定粉**，SPEC.md R3 的要求，不能动）。
+  由**待办**产生的日程时段维持散列色：那不是本次的新实体，不该顺手换色。
+  教训与上一条一模一样：**字段存下来了不等于有人用它**，
+  所以这轮起把"这个字段谁在读"也纳入入口自检。
 
 ### 验证记录
 
@@ -86,16 +95,18 @@
 | --- | --- | --- |
 | 2026-09-25 | 用户终端 `flutter test`（全量，步 1-3 数据层） | ✅ **742 个用例全过** |
 | 2026-09-25 | 用户终端 `flutter test`（全量，步 3 接线 + 步 4） | ✅ **816 个用例全过**（其中一次 `-1` 是测试自己把区间端点写错，代码没问题） |
-| 2026-09-25 | 我（每次提交前必跑） | `dart analyze --no-fatal-warnings` → 0 error（176 issues，与基线一致） |
+| 2026-09-25 | 用户终端 `flutter test`（全量，步 7 + 四处修复之前） | ✅ **861 个用例全过** |
+| 2026-09-25 | **我跑了全量 `flutter test`**（四处修复 + 颜色接线之后） | ✅ **871 个用例全过**（`All tests passed!`，新增 10 个用例：`anchorDateFor` 6 个 + `buildUpcoming` 的 eventColors 4 个） |
+| 2026-09-25 | 我（每次提交前必跑） | `dart analyze --no-fatal-warnings` → **0 error**；21 warning + 155 info，全部落在本次功能之外的既有代码里（唯一一处在我改过的文件里的 `calendar_view.dart:60` 那个多余 cast，已经用分支起点那一版核对过：功能之前就有） |
 
-我在沙箱里跑不了 `flutter test`（不允许 Dart 启动子进程），所以**每一步都需要用户跑一次全量测试**：
+> **更正（2026-09-25）**：这份清单早先写着"我在沙箱里跑不了 `flutter test`，
+> 所以每一步都需要用户跑一次全量测试"。**这句是错的**：`flutter test` 在
+> 放宽沙箱（`danger-full-access`，会弹一次授权框）之后能正常跑完，
+> 871 个用例就是我自己跑出来的。真正跑不了的只是**在受限沙箱里**跑。
+> 以后同类工作可以先申请一次放宽，由我自己跑全量，不必每次都占用你的时间；
+> 但**真机上的界面行为仍然只有你能验**（见 `tools/manual_check_user_event.md`）。
 
-```powershell
-cd D:\neochron
-flutter test
-```
-
-我能自己跑的只有两样：`dart analyze`，以及**纯逻辑部分**的临时验证程序
+除了全量测试，我平时能自己跑的还有：`dart analyze`，以及**纯逻辑部分**的临时验证程序
 （把纯 Dart 文件复制到临时目录、import 改相对路径后跑断言，**不进仓库**）。
 这个手段已经抓到一个真 bug（见下面「已抓到的真 bug」）。
 
@@ -107,9 +118,10 @@ flutter test
 | 2 | `feat/user-event-store` | 独立 box + 墓碑 + store（照 `course_mount_store.dart`，不新增 typeId） | ✅ 已提交 `976cf19` |
 | 3 | `feat/user-event-calendar` | 展开成 `Period`、接进月视图当天列表与「接下来」 | ✅ 已提交 `7ddb444`（数据层）+ `28be44b`（接线） |
 | 4 | `feat/user-event-edit-page` | 新建/编辑页 + `+` 弹选择 | ✅ 已提交 `9c9bd80`（数据层）+ `bf5aafc`（界面） |
-| 5 | `feat/user-event-timetable` | 接进课表格子（两种时间口径、冲突叠加、**粉色**） | 🔶 已写完待验证 + **需真机看** |
-| 6 | `feat/user-event-sync` | 导出/导入/局域网同步/合并四处一起改 | 🔶 已写完待验证 |
-| 7 | `docs/user-event-docs` | 更新 `MULTI_DEVICE_SYNC.md` 与 `FEATURES.md` 相关段落 | ✅ 已写（`FEATURES.md` 七之二 + 同步一节）|
+| 5 | `feat/user-event-timetable` | 接进课表格子（两种时间口径、冲突叠加、**粉色**） | ✅ 已提交 `7f76ec0`，并已 `merge` 回主线分支 `f41a7d3`（**当时漏并过一次，见下面的流程教训**）|
+| 6 | `feat/user-event-sync` | 导出/导入/局域网同步/合并四处一起改 | ✅ 已提交 `8da5017` |
+| 7 | `docs/user-event-docs` | 更新 `MULTI_DEVICE_SYNC.md` 与 `FEATURES.md` 相关段落 | ✅ 已提交 `f916681`（`FEATURES.md` 七之二 + 同步一节）|
+| 收尾 | `feat/user-event-edit-page` | 真机反馈的 4 处问题 + 颜色接线 | ✅ 已提交 `b3b74f3` / `e901c94`，**待你在真机上复验** |
 
 ### 步 1、2、3 的实际产出
 
@@ -155,6 +167,24 @@ flutter test
 
 两条教训都写进了代码注释与单测助手的注释里。
 
+### 流程教训（这次错在我，不在代码）
+
+**第 5 步提交在了另一个分支上，忘了并回来。** 第 5 步（课表扩到 15 行）写在
+`feat/user-event-timetable`，之后我 `git checkout` 回 `feat/user-event-edit-page`
+继续做第 6、7 步，**没有把第 5 步 merge 回来**。你在那个分支上 `flutter run`，
+于是拿到的构建仍然是 13 行、粉色卡片不出现 —— 你报的第 4 条有一半是这么来的。
+
+后果比"少一个功能"更糟：那个分支上的 `test/calendar_bundled_test.dart` 引用了
+只存在于另一分支的 `user_event_timetable.dart`，也就是说**这个分支当时根本编译不过**
+（`dart analyze` 会直接报 `uri_does_not_exist`）。我当时没发现，因为那几次 analyze
+是在**另一个**分支的工作区里跑的。
+
+修法：一个 `merge --no-ff`（`f41a7d3`）并回来。**不用 rebase**：AGENTS.md 禁止历史重写。
+
+以后的做法：**每步提交完立刻确认"我现在这个分支上，这一步的东西在不在"** ——
+最省事的判据就是提交前跑一次全量 `flutter test`（现在我能自己跑了），
+编译不过或引用了不存在的东西会当场暴露。
+
 ### 为什么多开一个 `user_event_date.dart`
 
 仓库里现成的 `dateOnly` 在 `lib/utils/utils.dart`，那个文件 import 了
@@ -189,7 +219,7 @@ flutter test
 | I1 | `assets/sounds/` 只有占位文件 | 2026-09-25 加了 `.gitkeep`（提交 `9c85b73`）让目录存在，`pub get` / `build` / `test` 不再报 `unable to find directory entry`。**目录里没有任何音频**，桌面端提示音走「找不到文件」分支。要做桌面端时再二选一：补音频，或删掉 `pubspec.yaml` 第 88 行的声明并把 `desktop_notify.dart` 的候选路径改掉 |
 | I2 | **`docs/DB_SCHEMA.md` 不存在** | AGENTS.md 第 5 条要求「改动涉及数据库 schema 时必须同步更新并说明迁移策略」，但仓库里从来没这个文件。要么补一份（box 名单 + typeId 占用 + 迁移口径），要么把 AGENTS.md 那条改写成实际口径。**在 #1 的步 2 之前要定**，否则新 box 没有地方登记 |
 | I3 | `.gitignore` 第 411 行忽略 `pubspec.lock` | 上游既有约定（`v1.3.0` → 当前 HEAD 都没提交过它）。好处是不钉死版本、代价是换机器时依赖会重新解析。要改是独立决策，别顺手改 |
-| I4 | 22 个 analyze warning（0 error） | CI 只对 error 敏感，当前不阻塞。里面有真东西：11 处 `unawaited_return_in_try_block`（`refresh_coordinator.dart`、`lan_sync_server.dart` 等）、`auto_relogin.dart` 的未用 import、`ai_compose_sheet.dart` 三个未引用元素、两处重复 import。**值得单独一轮清理**，别混进功能提交 |
+| I4 | 21 个 analyze warning（0 error） | CI 只对 error 敏感，当前不阻塞。里面有真东西：11 处 `unawaited_return_in_try_block`（`refresh_coordinator.dart`、`lan_sync_server.dart` 等）、`auto_relogin.dart` 的未用 import、`ai_compose_sheet.dart` 三个未引用元素、两处重复 import。**值得单独一轮清理**，别混进功能提交。另有 155 个 `info`（多是 `prefer_const_declarations` 一类），同样不阻塞 |
 | I5 | git `safe.directory` 未配置 | 这台机器没有全局 `.gitconfig`，某些受限令牌下 git 会报 `dubious ownership`（`.git` 所有者是 `BUILTIN\Administrators`，和主流工程目录一致，**不是损坏**）。建议在你自己终端跑一次 `git config --global --add safe.directory 'D:/Personal Files/Neochron'` |
 
 ---
