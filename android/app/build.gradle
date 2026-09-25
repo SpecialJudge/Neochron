@@ -58,7 +58,18 @@ android {
 
     defaultConfig {
         multiDexEnabled true
-        applicationId "xyz.nosig.celechron.mod"
+        // ===== 2026-09-25 换成本项目自己的包名 =====
+        //
+        // 原来是 `xyz.nosig.celechron.mod`（上一代 Elychron 用的那一个），后果有三个：
+        //   1. 系统把 Neochron 与 Elychron 当成**同一个应用**，安装时显示"更新"、两者不能共存；
+        //   2. 从 Elychron 迁过来时覆盖安装会被签名差异拒掉（INSTALL_FAILED_UPDATE_INCOMPATIBLE）；
+        //   3. 已装版本的 versionCode 更大时，装旧版会被拒（INSTALL_FAILED_VERSION_DOWNGRADE）。
+        // 换成自己的包名后这三点一起消失（代价：手机上要做一次"导出→卸载→装→导入"）。
+        //
+        // ⚠️ 注意：**不要**顺手把上面的 `namespace 'xyz.nosig.celechron'` 一起改掉 ——
+        // manifest 里的小组件/接收器用的是相对名（`.MainActivity`、`.TodoWidgetReceiver`），
+        // 它们按 namespace 解析；namespace 与 applicationId 本来就允许不同。
+        applicationId "io.github.specialjudge.neochron"
         minSdkVersion 28
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()

@@ -1,4 +1,4 @@
-# 从 Celechron 迁到 Elychron
+# 数据迁移：从 Celechron / Elychron 迁到 Neochron
 
 > 一句话：**课表、成绩、考试、作业、素拓、校园卡这些「服务端数据」登录一下就全有了，不用搬；
 > 真正要搬的只有你自己手写的待办。**
@@ -7,9 +7,10 @@
 
 | 你现在装的是 | 数据怎么办 | 麻烦程度 |
 |---|---|---|
-| **本魔改的旧版本**（包名 `xyz.nosig.celechron.mod`） | 直接覆盖安装，**数据自动保留** | ⭐ 最省事 |
-| **官方 Celechron**（1.2 / 1.3 / 社区维护版，包名 `xyz.nosig.celechron`） | 两个 App 可以**共存**；待办需按下面「手动迁移」重建 | ⭐⭐⭐ |
-| **Elychron → 官方版** | ❌ 不支持（官方版没有导入功能，见下） | — |
+| **上一代 Elychron**（包名 `xyz.nosig.celechron.mod`） | 包名不同 → **可以共存**；在 Elychron 里导出、在 Neochron 里导入即可搬过来 | ⭐ 最省事 |
+| **官方 Celechron**（1.2 / 1.3 / 社区维护版，包名 `xyz.nosig.celechron`） | 两个 App 可以**共存**；待办需按下面「手动迁移」重建（官方版没有导出功能） | ⭐⭐⭐ |
+| **2026-09-25 之前的早期 Neochron 构建**（包名还是 `xyz.nosig.celechron.mod`） | 与现在的新版本是两个不同的应用，**可以共存**；老的那个要卸载的话先导出数据 | ⭐⭐ |
+| **Neochron → 官方版** | ❌ 不支持（官方版没有导入功能，见下） | — |
 
 ---
 
@@ -26,22 +27,27 @@
 
 ---
 
-## 二、情况 A：从本魔改的旧版本升级（推荐路径）
+## 二、情况 A：从上一代 Elychron（或早期 Neochron）搬过来
 
-包名相同（`xyz.nosig.celechron.mod`），**直接覆盖安装**：
+**包名不同**（Elychron 是 `xyz.nosig.celechron.mod`，Neochron 是
+`io.github.specialjudge.neochron`），所以两个 App **可以共存**，数据要手动搬一次：
 
 ```text
-1. 下载新版 apk
-2. 直接安装（不要先卸载！）
-3. 打开确认：待办、标签、专注记录、设置都在
+1. Elychron：设置 → 数据 → 导出数据（得到 celechron-backup-*.json）
+2. 装 Neochron（不用卸载 Elychron，两者共存）
+3. Neochron：设置 → 数据 → 导入数据，选刚才那个 json
+4. 打开确认：待办、标签、专注记录、自定义日程都在
 ```
 
-⚠️ **一个必须提前知道的前提：签名**
+⚠️ **为什么以前是"直接覆盖安装"，现在要搬一次**
 
-覆盖安装要求两个包**签名一致**。我们此前的构建用的是 debug 签名；如果发布版换成了正式签名，
-系统会拒绝覆盖安装，你只能「导出 → 卸载 → 装新版 → 导入」。
-
-所以**升级前请先做一次导出**（见第四节），这是万无一失的习惯。
+2026-09-25 之前，Neochron 沿用着上一代 Elychron 的包名（`xyz.nosig.celechron.mod`），
+那时确实是"覆盖安装、数据自动保留"。但同一个包名带来两个硬伤：
+**签名不同会让覆盖安装被系统直接拒绝**（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`），
+**两者永远不能共存**，而且已装版本 versionCode 更大时装旧版还会被拒
+（`INSTALL_FAILED_VERSION_DOWNGRADE` —— Android 只比 versionCode，不看 versionName）。
+所以这一版起换成了自己的包名，代价就是**装过旧包名的人要搬一次数据**（上面四步）。
+签名与密钥的说明见 [RELEASE.md](RELEASE.md)。
 
 ---
 
@@ -121,9 +127,10 @@ Elychron 的 AI 能把**截图或一段文字**直接整理成待办（含类型
 
 ## 五、常见问题
 
-**Q：装 Elychron 会不会覆盖我原来的 Celechron？**
-不会。包名不同（`xyz.nosig.celechron.mod` vs `xyz.nosig.celechron`），可以共存。
-桌面上会有两个图标，请认准粉色那个。
+**Q：装 Neochron 会不会覆盖我原来的 Celechron 或 Elychron？**
+不会。包名都不同（Neochron 是 `io.github.specialjudge.neochron`，
+官方版是 `xyz.nosig.celechron`，上一代 Elychron 是 `xyz.nosig.celechron.mod`），**可以共存**。
+桌面上会有多个图标，请认准粉色那个。
 
 **Q：装完打开是空的，是不是坏了？**
 不是。第一次打开需要登录学校账号，登录后课表 / 成绩 / 作业会自动拉取。

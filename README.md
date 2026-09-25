@@ -11,7 +11,7 @@
 >   **那些改动的功劳属于其原作者**，本仓库只是在它们的基础上继续做
 > - 许可协议：**GPLv3**（继承上游，见 [LICENSE](LICENSE)）。本仓库即为对应源码，
 >   只要分发本程序的二进制，你就有权获得这份源码。
-> - 独立 `applicationId`（`xyz.nosig.celechron.mod`），**可与官方版共存**，装它不会覆盖官方版
+> - 独立 `applicationId`（`io.github.specialjudge.neochron`），**与官方 Celechron、上一代 Elychron 都能共存**，装它不会覆盖它们
 >
 > Neochron 不是 Celechron 官方版本，与官方项目无关。遇到问题请提到**本仓库** Issues，
 > **不要去打扰上游作者**（也不要打扰上一代作者）。
@@ -168,7 +168,7 @@ Celechron 可以查课表、成绩、考试、作业，也允许自定义日程�
 | **数据备份** | ❌ 无 | ✅ JSON **导出 / 导入**（按 `uid` + 更新时间合并，删除留墓碑） |
 | **出问题的排查** | 诊断日志 | 诊断日志 + **刷新数字**（接口返回几行 / 解析入库几条 / 能显示几条） |
 | **电脑上操作待办** | ❌ 无 | ✅ **局域网直连网页端**：手机当服务器、电脑浏览器访问，配对码 + 本地 token，只服务私有网段 |
-| **包名** | `xyz.nosig.celechron` | `xyz.nosig.celechron.mod` —— **可与官方版共存** |
+| **包名** | `xyz.nosig.celechron` | `io.github.specialjudge.neochron` —— 与官方版、上一代 Elychron **都能共存** |
 
 > 上表每一行都能在源码里对上：上游 1.3.0 的 `Task` 模型**没有** priority / attachment /
 > tags / subtask / reminder 字段，仓库里也**没有** `lib/mod/` 目录、
@@ -176,17 +176,16 @@ Celechron 可以查课表、成绩、考试、作业，也允许自定义日程�
 
 ## 三、数据迁移
 
-**从上一代 Elychron 迁过来**（最容易踩的坑，先说这个）：
+**从上一代 Elychron 搬过来**：
 
-- 两者**包名相同**（都是 `xyz.nosig.celechron.mod`），系统把它们当**同一个应用**，
-  所以安装时显示的是"更新"而不是"安装"，而且**两者不能共存**；
-- 但**签名不同**（上一代用其维护者的密钥，本项目用自己的密钥），所以**覆盖安装会被拒绝**
-  （`INSTALL_FAILED_UPDATE_INCOMPATIBLE`）；
-- **版本降级也会被拒绝**：如果已装的是 versionCode 更大的版本，装旧版会报"已安装了较新版本"
-  （`INSTALL_FAILED_VERSION_DOWNGRADE`）。Android 只比 **versionCode**
-  （`pubspec.yaml` 里 `版本号+` 后面那个整数），不看 versionName；
-- 正确步骤：打开 **Elychron** → 设置 → 数据 → **导出数据** → **卸载 Elychron** →
-  装 Neochron → 设置 → 数据 → **导入数据**。反过来想回 Elychron，同样要走这一套。
+- Neochron 的包名是 `io.github.specialjudge.neochron`，与 Elychron 的
+  `xyz.nosig.celechron.mod` **不同** → 两个 App **可以共存**（桌面上两个图标），
+  谁也不会覆盖谁，数据也各自独立；
+- 但**数据不会自动过来**：在 Elychron 里 设置 → 数据 → **导出数据**，
+  再在 Neochron 里 设置 → 数据 → **导入数据**（导出的 JSON 两边互相认，
+  待办、标签、专注记录与自定义日程都在里面）；
+- 若你装过 **2026-09-25 之前的早期 Neochron 构建**（那时还用着 Elychron 的包名）：
+  它和新版本是两个不同的应用，同样可以共存；老的那个要卸载的话，**先导出数据**。
 
 **从官方版迁过来**：课表、成绩、考试、作业、素质拓展、校园卡 **登录同一个学校账号就有**，
 不用搬。要手动处理的只有你自己手写的待办 —— 官方版**没有数据导出功能**，这部分只能重建：

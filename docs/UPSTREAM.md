@@ -170,5 +170,5 @@ git push origin main mod-1.4.0
 - 修改版必须保留原版权与许可证声明（`LICENSE` + app 内「关于」页的 GPL 声明），并标注"已修改"及日期
 - **不得附加额外限制**（禁止商用/禁止二转/需授权等均不允许）
 - 商标不在 GPL 授权范围内：**不要**使用官方名称与图标、不要使用浙大校徽等标识
-- 已改用独立 `applicationId`（`xyz.nosig.celechron.mod`），与官方版本可共存
+- 已改用独立 `applicationId`（`io.github.specialjudge.neochron`），与官方版、上一代 Elychron 都可共存
 - 涉及用户数据的新功能（如接入云端 AI）必须默认关闭并明确告知

@@ -1,5 +1,10 @@
 # Celechron 魔改版说明
 
+> ⚠️ **本文件是历史记录**：它记的是这个魔改从 Celechron 1.2.0 一路改下来的过程，
+> 里面的版本号、应用名、包名（`xyz.nosig.celechron.mod`）都是**当时**的状态。
+> **当前状态**请看 [README.md](README.md)：应用名 **Neochron**、包名
+> `io.github.specialjudge.neochron`、仓库 `SpecialJudge/Neochron`。
+
 ## 一句话
 
 把 Celechron 的「任务/日程」改造成钉钉待办详情页的形态：完成待办按钮、大标题、描述、截止时间带提醒铃铛、优先级、子待办、附件、本地评论，并新增实时倒计时。*（「时间安排」已在后续迭代中按要求移除）*

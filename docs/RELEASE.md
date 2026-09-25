@@ -17,7 +17,7 @@
 
 | 事实 | 值 | 影响 |
 |---|---|---|
-| applicationId | `xyz.nosig.celechron.mod` | 与上游 `xyz.nosig.celechron` **不同** → 两个 App 可共存 ✓ |
+| applicationId | `io.github.specialjudge.neochron` | 2026-09-25 从 `xyz.nosig.celechron.mod` 换过来：与上游 `xyz.nosig.celechron`、上一代 Elychron 都不同 → 多个 App 可共存 ✓（代价：换包名 = 换一个 App，手机上要做一次导出/卸载/装/导入） |
 | 签名 | ✅ 2026-09-25 起用**本项目自己的** release 密钥（`CN=Neochron`）| 见「四、签名步骤」；`android/key.properties` 在则用它，不在才退回 debug |
 | 更新检查 | 已改为自己的 GitHub Releases API | ✅ 见 P0-1 —— **但地址仍指向上一代仓库，待随仓库搬迁一起改**（BACKLOG I12）|
 | 版本号 | `1.4.2-elychron.1+10` | 后缀里的 `elychron` 待下次发版换掉（BACKLOG I10）|
@@ -209,7 +209,9 @@ android {
 `adb install -r` 会被系统拒绝，报 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`。步骤：
 
 1. 手机上先**导出数据**（设置 → 数据 → 导出 JSON），把文件存到手机或发给自己；
-2. `adb uninstall xyz.nosig.celechron.mod`（这一步会清掉应用数据）；
+2. `adb uninstall xyz.nosig.celechron.mod`（**旧包名**；这一步会清掉应用数据。
+   2026-09-25 起包名已改成 `io.github.specialjudge.neochron`，所以这一步只在
+   "从旧包名的安装迁过来"时才需要 —— 之后的覆盖升级不用卸载）；
 3. 装新包：`adb install build\app\outputs\flutter-apk\app-release.apk`；
 4. 打开应用**重新登录**（账号密码存在系统密钥库里，卸载时一起没了），
    再**导入**刚才那份 JSON。
