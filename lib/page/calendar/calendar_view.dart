@@ -4,7 +4,10 @@ import 'package:celechron/design/card_flip.dart';
 import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/design/sub_title.dart';
 import 'package:celechron/design/task_priority_color.dart';
+import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/mod/calendar_paging.dart';
+import 'package:celechron/mod/user_event.dart';
+import 'package:celechron/mod/user_event_store.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/page/task/task_create_page.dart';
@@ -24,6 +27,7 @@ import 'package:celechron/page/scholar/course_detail/course_detail_view.dart';
 import 'package:celechron/model/upcoming.dart';
 import 'package:celechron/page/calendar/schedule_view.dart';
 import 'package:celechron/page/calendar/upcoming_view.dart';
+import 'package:celechron/page/calendar/user_event_edit_page.dart';
 import 'calendar_controller.dart';
 import 'foldable_calendar.dart';
 
@@ -88,20 +92,7 @@ class CalendarPage extends StatelessWidget {
                     CupertinoIcons.add_circled,
                     semanticLabel: 'Add',
                   ),
-                  onPressed: () async {
-                    await newDeadline(
-                      context,
-                      time: DateTime(
-                        _calendarController.selectedDay.value.year,
-                        _calendarController.selectedDay.value.month,
-                        _calendarController.selectedDay.value.day,
-                        DateTime.now().hour,
-                        DateTime.now().minute,
-                      ),
-                    );
-                    _taskController.updateDeadlineList();
-                    _taskController.taskList.refresh();
-                  },
+                  onPressed: () => _newFromPlusButton(context),
                 ),
                 CupertinoButton(
                   padding: EdgeInsets.zero,
@@ -431,6 +422,78 @@ class CalendarPage extends StatelessWidget {
   ScrollPhysics _dayListPhysics(BuildContext context) =>
       const AlwaysScrollableScrollPhysics()
           .applyTo(ScrollConfiguration.of(context).getScrollPhysics(context));
+
+  /// 新建入口（日程页右上角那个加号）。
+  ///
+  /// ===== MOD: 用户拍板（SPEC.md D2）=====
+  ///
+  /// 原来是"点一下直接建待办"。现在这里**先问一句**要建哪一种：
+  /// 待办（要完成的事）与日程（到点就发生的事）在库里是两种东西，
+  /// 让用户在这一步就选对，比事后把待办转成日程省事得多。
+  Future<void> _newFromPlusButton(BuildContext context) async {
+    final choice = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (BuildContext context) => CupertinoActionSheet(
+        title: const Text('新建'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop('task'),
+            child: const Text('待办（要完成的事）'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop('event'),
+            child: const Text('日程（到点就发生，比如例会）'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'task') {
+      final day = _calendarController.selectedDay.value;
+      await newDeadline(
+        context,
+        time: DateTime(day.year, day.month, day.day, DateTime.now().hour,
+            DateTime.now().minute),
+      );
+      _taskController.updateDeadlineList();
+      _taskController.taskList.refresh();
+    } else if (choice == 'event') {
+      await newUserEvent(context, day: _calendarController.selectedDay.value);
+    }
+  }
+
+  /// 新建一条自定义日程（SPEC.md 步 4）。
+  ///
+  /// 默认值有一处讲究（SPEC.md D11）：**重复截止日预填本学期最后一天**。
+  /// 这样"上学期的例会不带进下学期"不用额外机制就成立；
+  /// 用户在编辑页里可以把它清掉（清掉 = 一直重复，放假也要用）。
+  Future<void> newUserEvent(BuildContext context, {DateTime? day}) async {
+    final semester = _calendarController.getDisplayedSemester();
+    final draft = newUserEventDraft(
+      today: day ?? DateTime.now(),
+      semesterName: semester?.name,
+      semesterLastDay: semester?.hasCalendar == true ? semester?.lastDay : null,
+    );
+    final created = await showCupertinoModalPopup<UserEvent>(
+      context: context,
+      builder: (BuildContext context) => UserEventEditPage(initial: draft),
+    );
+    if (created == null) return;
+    try {
+      await Get.find<DatabaseHelper>(tag: 'db').saveUserEvent(created);
+    } catch (_) {
+      // 存不进去就什么都别改：日程页按原样显示（总比崩掉强）
+      return;
+    }
+    if (!context.mounted) return;
+    // 控制器自己会听到 userEvents 变化并重算日历（见 onInit 里的 ever）
+    _calendarController.loadUserEvents();
+  }
 
   Future<void> newDeadline(context, {required DateTime time}) async {
     Task? deadline = Task(
@@ -856,10 +919,22 @@ class CalendarPage extends StatelessWidget {
     // 读一下心跳：让包住这一层的 Obx 每 20 秒重算一次。
     // 否则还有 N 分钟会停在页面上次重建时的旧值（实测差过一刻钟）。
     _calendarController.upcomingTick.value;
+    final now = DateTime.now();
     return buildUpcoming(
-      periods: _calendarController.scholar.value.periods,
+      // ===== MOD: 自定义日程也进「接下来」（SPEC.md 步 3）=====
+      //
+      // 与课程/考试拼在同一份 periods 里：`buildUpcoming` 已经会把
+      // `PeriodType.user` 归成 UpcomingKind.activity（界面上叫「日程」），
+      // 所以这里不用另开一条路径。取未来 8 天（比默认窗口多一天，跨零点不丢）。
+      periods: [
+        ..._calendarController.scholar.value.periods,
+        ..._calendarController.userEventPeriodsBetween(
+          now,
+          now.add(const Duration(days: 8)),
+        ),
+      ],
       tasks: deadlineList.toList(),
-      now: DateTime.now(),
+      now: now,
     );
   }
 

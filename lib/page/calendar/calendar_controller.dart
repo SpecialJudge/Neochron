@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/mod/calendar_fold.dart';
 import 'package:celechron/mod/calendar_paging.dart';
+import 'package:celechron/mod/user_event.dart';
+import 'package:celechron/mod/user_event_periods.dart';
+import 'package:celechron/mod/user_event_store.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -18,6 +22,32 @@ enum CalendarViewMode {
   upcoming,
 }
 
+/// [day] 落在 [semesters] 里的哪个学期；哪个都不在就 `null`。
+///
+/// ===== MOD: 给自定义日程用（2026-09-25）=====
+///
+/// 抽成顶层纯函数有两个原因：
+/// 1. `CalendarController.getSemesterOf` 要按"用户翻到的那一天"找学期，
+///    与校历归属是同一个口径，写在两处迟早不一致；
+/// 2. 它只依赖 `Semester` 的几个 getter，能直接单测（不必启动 Hive 或整个页面）。
+///
+/// ⚠️ **必须要求 `hasCalendar`**：没套过校历的学期，`firstDay` / `lastDay`
+/// 返回的是"求值那一刻的现在"这种占位值，拿它判断会把任意一天都算进去。
+/// 这个坑 `getUpcomingSemester` 的注释里已经记过一次。
+Semester? semesterContaining(Iterable<Semester> semesters, DateTime day) {
+  final target = DateTime(day.year, day.month, day.day);
+  for (final semester in semesters) {
+    if (!semester.hasCalendar) continue;
+    final first = semester.firstDay;
+    final last = semester.lastDay;
+    final from = DateTime(first.year, first.month, first.day);
+    final to = DateTime(last.year, last.month, last.day);
+    if (target.isBefore(from) || target.isAfter(to)) continue;
+    return semester;
+  }
+  return null;
+}
+
 class CalendarController extends GetxController {
   final selectedDay = DateTime.now().obs;
   final focusedDay = DateTime.now().obs;
@@ -25,6 +55,14 @@ class CalendarController extends GetxController {
   final events = <DateTime, List<Period>>{}.obs;
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final taskList = Get.find<RxList<Task>>(tag: 'taskList');
+
+  /// ===== MOD: 自定义日程（学生组织例会那种，SPEC.md 步 3）=====
+  ///
+  /// 用户自己排的日程。**刻意与课程分开存**：课程由教务刷新重建，
+  /// 用户数据混进 `Scholar` 或 `Semester` 里迟早被冲掉（见 `user_event_store.dart`）。
+  /// 这里只放"读出来的一份快照"，增删改由日程页自己再调 [loadUserEvents] 刷新。
+  final userEvents = <UserEvent>[].obs;
+
 
   /// 默认进接下来（用户要求：打开日程页先看接下来要做什么）
   final viewMode = CalendarViewMode.upcoming.obs;
@@ -57,8 +95,11 @@ class CalendarController extends GetxController {
 
   @override
   void onInit() {
+    loadUserEvents();
     refreshEvents();
     ever(scholar, (callback) => refreshEvents());
+    // 自定义日程变了就重算日历标记（增删改都走这条，界面不用自己记得刷新）
+    ever(userEvents, (callback) => refreshEvents());
     _tickTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (viewMode.value == CalendarViewMode.upcoming) {
         upcomingTick.value++;
@@ -102,6 +143,80 @@ class CalendarController extends GetxController {
     return DateTime(day.year, day.month, day.day);
   }
 
+  // ===== MOD: 自定义日程（SPEC.md 步 3）=====
+
+  /// 从本地库读一份自定义日程快照。
+  ///
+  /// **读不出来就留空表**，绝不阻塞日程页：数据库没准备好（启动早期）或者
+  /// 盒子打不开时，用户看到的应该是"只有课程"的日历，而不是一个崩掉的页面。
+  void loadUserEvents() {
+    try {
+      final db = Get.find<DatabaseHelper>(tag: 'db');
+      userEvents.value = db.userEvents();
+    } catch (_) {
+      userEvents.value = <UserEvent>[];
+    }
+  }
+
+  /// 把某个学期拍成 [UserEventCalendar]（自定义日程要的那份轻量快照）。
+  ///
+  /// 两处口径都取自既有代码，没有自己另写一份：
+  /// - 节次到钟点的换算表来自 `Semester.periodTimes`（与课程同一套）；
+  /// - 课程占用时间来自 `Semester.periods` 里 type 为 `classes` 的那些，
+  ///   用来判断"自定义日程与课冲突"（SPEC.md D10）。
+  ///
+  /// 故意**不把 `PeriodType.user` 算进课程**：那些正是用户自己的活动型待办，
+  /// 把它们当成"课"会把自己的日程判成和自己冲突。
+  UserEventCalendar userEventCalendarFor(Semester semester) {
+    final periods = semester.periods;
+    final lectures = <LectureTime>[];
+    for (final period in periods) {
+      if (period.type != PeriodType.classes) continue;
+      lectures.add(LectureTime.ofPeriod(period));
+    }
+    return UserEventCalendar(
+      semesterName: semester.name,
+      firstDay: semester.firstDay,
+      lastDay: semester.lastDay,
+      periodTimes: semester.periodTimes,
+      lectures: lectures,
+    );
+  }
+
+  /// [day] 那天的自定义日程时段（转成日历能画的 `Period`）。
+  ///
+  /// 找不到学期（假期、考试周）时返回空表：那种时候课表也没有，
+  /// 没有节次换算表可用，硬算只会把第 5 节画到错误的时间上。
+  List<Period> userEventPeriodsOfDay(DateTime day) {
+    final semester = getSemesterOf(day);
+    if (semester == null) return const <Period>[];
+    return toPeriods(userEventCalendarFor(semester).spansOfDay(userEvents, day));
+  }
+
+  /// [from] 到 [to] 之间（含两端）的自定义日程时段。
+  ///
+  /// 「接下来」那一面要跨天取（默认看未来 7 天），所以需要区间版本。
+  /// 跨学期时会按天去各自学期里取，不会因为"这一天不在本学期"就整段漏掉。
+  List<Period> userEventPeriodsBetween(DateTime from, DateTime to) {
+    var day = chopDate(from);
+    final last = chopDate(to);
+    final result = <Period>[];
+    while (!day.isAfter(last)) {
+      result.addAll(userEventPeriodsOfDay(day));
+      day = DateTime(day.year, day.month, day.day + 1);
+    }
+    return result;
+  }
+
+  /// [day] 落在哪个学期（按学期起止日判断）；没有就 null。
+  ///
+  /// 与 [getCurrentSemester] 的区别：那个只看"今天"，这个看**任意一天**
+  /// （用户会翻到别的日期去，日历得跟着那一天所处的学期来算）。
+  Semester? getSemesterOf(DateTime day) => semesterContaining(
+        scholar.value.semesters,
+        day,
+      );
+
   List<Period> getEventsForDay(DateTime day) {
     DateTime chop = chopDate(day);
     var eventsOfDay = <Period>[];
@@ -110,6 +225,11 @@ class CalendarController extends GetxController {
         eventsOfDay.add(event.copyWith());
       }
     }
+    // ===== MOD: 自定义日程也进当天列表（SPEC.md 步 3）=====
+    //
+    // 与课程/考试同一层：它们都是 Period，界面一视同仁地画，
+    // 靠 `type`（PeriodType.user）与固定粉区分（SPEC.md R3）。
+    eventsOfDay.addAll(userEventPeriodsOfDay(day));
     for (var deadline in taskList) {
       // ===== 已完成的待办不在日程页露面（用户要求）=====
       if (deadline.status == TaskStatus.completed) continue;

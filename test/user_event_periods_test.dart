@@ -165,11 +165,22 @@ void main() {
       expect(week.single.day, d(9, 14));
     });
 
-    test('每两周：两周里只有一次', () {
+    test('每两周：两周里正好两次（9/14 与 9/28）', () {
       final c = cal();
       final event = byPeriod('e1', repeatPeriod: 2);
-      final spans = c.spansBetween([event], d(9, 14), d(9, 27));
+      // 区间右端必须**含到 9/28**：写成 9/27 会把第二次排除在外，
+      // 于是只扫出 9/14、断言报"shorter than expected"。
+      // （这个错我在验证程序与本测试里各犯过一次，注释留在这儿防第三次。）
+      final spans = c.spansBetween([event], d(9, 14), d(9, 28));
       expect(spans.map((s) => s.day), [d(9, 14), d(9, 28)]);
+    });
+
+    test('每两周：中间那一周确实不铺（区间含到 9/28 时也只有两天）', () {
+      final c = cal();
+      final event = byPeriod('e1', repeatPeriod: 2);
+      final spans = c.spansBetween([event], d(9, 14), d(9, 28));
+      expect(spans.length, 2, reason: '9/21 那周不该有');
+      expect(spans.map((s) => s.day).contains(d(9, 21)), isFalse);
     });
 
     test('★ 学期边界：超出学期的日子不铺', () {

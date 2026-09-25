@@ -1,4 +1,5 @@
 import 'package:celechron/mod/user_event.dart';
+import 'package:celechron/mod/user_event_clock.dart';
 import 'package:celechron/mod/user_event_date.dart';
 import 'package:celechron/mod/user_event_rule.dart';
 import 'package:celechron/model/period.dart';
@@ -59,6 +60,12 @@ class UserEventCalendar {
   });
 
   /// 一条日程在 [day] 那天的时段；那天不发生、或换算不出来就返回 null。
+  ///
+  /// ⚠️ **已知边界（写清楚免得以后当成 bug 查）**：结束时刻早于开始时刻时，
+  /// 这里按"单时刻"处理（折成一个点），**不会**理解成"跨到第二天"。
+  /// 也就是说 23:00-01:00 这种跨零点的日程，第二天不会显示那一段尾巴。
+  /// 例会、家教这类固定日程极少跨零点，先不做；真要做的话得给模型加一个
+  /// "结束属于下一天"的标记，届时一并改这里与 [spanOf] 的调用方。
   EventSpan? spanOf(UserEvent event, DateTime day) {
     if (!UserEventRule.occursOn(event, day)) return null;
     final start = startAt(event, day);
@@ -196,18 +203,10 @@ class UserEventCalendar {
       spans.where(conflictsWithLecture).toList();
 
   /// `"19:00"` / `"19:00:00"` -> `(19, 0)`；读不出来返回 null
-  static (int, int)? parseClock(String? clock) {
-    if (clock == null) return null;
-    final text = clock.trim();
-    if (text.isEmpty) return null;
-    final parts = text.split(':');
-    if (parts.length < 2) return null;
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) return null;
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-    return (hour, minute);
-  }
+  ///
+  /// 实现搬到了叶子文件 `user_event_clock.dart`（编辑页校验也要用同一套口径，
+  /// 而那一层必须保持纯 Dart）。这里保留同名静态方法，原来的调用点不用改。
+  static (int, int)? parseClock(String? clock) => userEventParseClock(clock);
 }
 
 /// 自定义日程某一次的时段（**不依赖 Flutter 的轻量类型**）。
